@@ -226,28 +226,55 @@ document.addEventListener('DOMContentLoaded', () => {
         window.showToast('正在生成角色主页内容...');
         
         let wbContext = '';
+        
+        // 1. 全局世界书
         if (window.getWorldBooks) {
             const allWb = window.getWorldBooks();
             const globalWb = allWb.filter(b => b.isGlobal);
             if (globalWb.length > 0) {
-                wbContext = "世界观背景设定:\n";
+                wbContext += "世界观背景设定:\n";
                 globalWb.forEach(b => {
                     b.entries.forEach(e => {
                         wbContext += `- ${e.keyword}: ${e.content}\n`;
                     });
                 });
+                wbContext += "\n";
             }
         }
 
+        // 2. 内置世界书 (如果存在)
+        if (window.getBuiltinWorldBooks) {
+            const builtinWb = window.getBuiltinWorldBooks().filter(b => b.isGlobal);
+            if (builtinWb.length > 0) {
+                wbContext += "内置设定:\n";
+                builtinWb.forEach(b => {
+                    b.entries.forEach(e => {
+                        wbContext += `- ${e.keyword}: ${e.content}\n`;
+                    });
+                });
+                wbContext += "\n";
+            }
+        }
+
+        // 3. 角色记忆 (如果存在)
+        if (char.memories && char.memories.length > 0) {
+            wbContext += "角色记忆:\n";
+            char.memories.forEach(m => {
+                wbContext += `- ${m.text}\n`;
+            });
+            wbContext += "\n";
+        }
+
         const prompt = `
-你现在是一个 TikTok 视频内容生成器。请根据以下角色的设定和挂载的世界书，为该角色生成主页内容：至少 2 条发布的视频内容和至少 2 条点赞过的视频。
+你现在是一个 TikTok 视频内容生成器。请根据以下角色的设定和挂载的世界书/记忆，为该角色生成主页内容：至少 2 条发布的视频内容和至少 2 条点赞过的视频。
 角色名字：${char.name}
 角色设定：${char.persona}
 
 要求：
 1. 整体风格符合该角色的性格和人物设定，视频画面用文字描述，富有镜头感或气泡文字表现感，必须以第三人称视角描述简要的环境氛围、动作和语言描述，字数严格控制在 40-80 字之间。
-2.符合世界观，仿真实tk网络视频，内容多样化，文案要具有“活人感”（例如碎碎念、吐槽、玩梗,也可以是一句摘的抄文学语录），切忌机器播报感。
-3. 返回严格的 JSON 格式（不要有 markdown 代码块标记，不要多余文字），格式必须如下：
+2. 符合世界观，仿真实tk网络视频，内容多样化，文案要具有“活人感”（例如碎碎念、吐槽、玩梗,也可以是一句摘抄的文学语录），切忌机器播报感。
+3. 务必为每个视频生成 3-5 条相关评论，且如果情景合适（比如@了朋友），请在评论中追加 \`replies\`（楼中楼回复）。
+4. 返回严格的 JSON 格式（不要有 markdown 代码块标记，不要多余文字），格式必须如下：
 {
   "posts": [
     {
@@ -257,7 +284,20 @@ document.addEventListener('DOMContentLoaded', () => {
       "commentsCount": 5,
       "shares": 12,
       "comments": [
-        { "authorName": "评论者A", "authorAvatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=c1", "text": "评论内容", "likes": 12 }
+        { 
+          "authorName": "评论者A", 
+          "authorAvatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=c1", 
+          "text": "评论内容", 
+          "likes": 12,
+          "replies": [
+            {
+              "authorName": "回复者B",
+              "authorAvatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=c2",
+              "text": "回复内容（如果情景合适）",
+              "likes": 3
+            }
+          ]
+        }
       ]
     }
   ],
@@ -270,7 +310,15 @@ document.addEventListener('DOMContentLoaded', () => {
       "likes": 5678,
       "commentsCount": 30,
       "shares": 20,
-      "comments": []
+      "comments": [
+        {
+          "authorName": "评论者A",
+          "authorAvatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=c3",
+          "text": "好有趣的视频！",
+          "likes": 100,
+          "replies": []
+        }
+      ]
     }
   ]
 }

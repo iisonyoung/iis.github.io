@@ -510,7 +510,7 @@ async function openChatTab(friend) {
                                     const members = window.imChat.getGroupMemberFriends(friend);
                                     const speakerInfo = members.find(m => m.nickname === speakerName);
                                     if (speakerInfo && window.imChat.showGroupMemberProfileCard) {
-                                        window.imChat.showGroupMemberProfileCard(speakerInfo, page, avatarSlot);
+                                        window.imChat.showGroupMemberProfileCard(speakerInfo, page, avatarSlot, friend);
                                     }
                                 }
                             }
@@ -848,7 +848,7 @@ function closeContextMenu() {
 
     window.imChat.openChatTab = openChatTab;
     window.imChat.showContextMenu = showContextMenu;
-    function showGroupMemberProfileCard(speakerInfo, page, anchorElement) {
+    function showGroupMemberProfileCard(speakerInfo, page, anchorElement, group) {
         if (!page) return;
         let overlay = document.getElementById('global-gmp-overlay');
         if (!overlay) {
@@ -887,8 +887,14 @@ function closeContextMenu() {
         const name = speakerInfo.nickname || 'Unknown';
         const signature = speakerInfo.signature || '这个人很懒，什么都没写';
         const title = speakerInfo.groupTitle || '';
-        const thought = speakerInfo.latestThought || '暂无心声';
-        const status = speakerInfo.status || 'online';
+        
+        let groupProfile = {};
+        if (group && group.memberProfiles && group.memberProfiles[speakerInfo.id]) {
+            groupProfile = group.memberProfiles[speakerInfo.id];
+        }
+        
+        const thought = groupProfile.thought || '暂无心声';
+        const status = groupProfile.status || 'online';
 
         let titleHtml = title ? `<div class="gmp-title">${title}</div>` : '';
 
@@ -913,20 +919,27 @@ function closeContextMenu() {
         const statusBubble = card.querySelector('.gmp-status-bubble');
         statusBubble.addEventListener('blur', async (e) => {
             const nextStatus = e.target.innerText.trim() || 'online';
-            const saved = window.imApp.commitFriendChange
-                ? await window.imApp.commitFriendChange(speakerInfo.id, (targetFriend) => {
-                    if (!targetFriend) return;
-                    targetFriend.status = nextStatus;
-                }, { silent: true })
-                : false;
+            if (group) {
+                const saved = window.imApp.commitFriendChange
+                    ? await window.imApp.commitFriendChange(group.id, (targetGroup) => {
+                        if (!targetGroup) return;
+                        if (!targetGroup.memberProfiles) targetGroup.memberProfiles = {};
+                        if (!targetGroup.memberProfiles[speakerInfo.id]) {
+                            targetGroup.memberProfiles[speakerInfo.id] = { thought: '暂无心声', status: 'online' };
+                        }
+                        targetGroup.memberProfiles[speakerInfo.id].status = nextStatus;
+                    }, { silent: true })
+                    : false;
 
-            if (!saved) {
-                e.target.innerText = speakerInfo.status || 'online';
-                if (window.showToast) window.showToast('状态保存失败');
-                return;
+                if (!saved) {
+                    e.target.innerText = status;
+                    if (window.showToast) window.showToast('状态保存失败');
+                    return;
+                }
+            } else {
+                // Fallback if no group context
+                e.target.innerText = status;
             }
-
-            speakerInfo.status = nextStatus;
         });
 
         const actionBtn = card.querySelector('.gmp-action-btn');

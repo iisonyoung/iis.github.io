@@ -141,7 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetEvent = events[eventIndex];
             const nextEntry = buildCherishedMemoryEntryFromEvent(targetEvent, friend);
             if (!nextEntry) {
-                targetEvent.status = 'confirmed';
+                events.splice(eventIndex, 1);
+                panel.events = events;
                 return;
             }
 
@@ -161,7 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             friend.memory.cherishedEntries = existingEntries;
             friend.memory.cherished = mergeCherishedMemoryText(friend.memory.cherished, nextEntry);
-            targetEvent.status = 'confirmed';
+            
+            events.splice(eventIndex, 1);
+            panel.events = events;
         }, { silent: true });
 
         return saved;
@@ -174,10 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return commitStatusFriendChange(targetFriend, (friend) => {
             if (!friend) return;
             const panel = ensureProfilePanelData(friend);
-            const events = Array.isArray(panel.events) ? panel.events : [];
-            const targetEvent = events.find((eventItem) => String(eventItem.id) === String(eventId));
-            if (!targetEvent) return;
-            targetEvent.status = 'cancelled';
+            let events = Array.isArray(panel.events) ? panel.events : [];
+            events = events.filter((eventItem) => String(eventItem.id) !== String(eventId));
+            panel.events = events;
         }, { silent: true });
     }
 
@@ -302,17 +304,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return `
             <div class="chat-profile-panel-section">
-                <div class="gmp-inner-voice chat-profile-panel-thought">
-                    ${panel.thought.trim()}
-                </div>
-                <div class="chat-profile-panel-meta-row">
-                    <div class="chat-profile-panel-meta-bubble">
-                        <span class="chat-profile-panel-meta-key">位置</span>
-                        <span class="chat-profile-panel-meta-value">${panel.location || '未知位置'}</span>
+                <div class="gmp-inner-voice chat-profile-panel-thought">${panel.thought.trim()}</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 2px;">
+                    <div style="background: #f2f2f7; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="font-size: 11px; color: #8e8e93; font-weight: 700;">位置</div>
+                        <div style="font-size: 13px; color: #333; line-height: 1.4; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${panel.location || '未知'}</div>
                     </div>
-                    <div class="chat-profile-panel-meta-bubble">
-                        <span class="chat-profile-panel-meta-key">动作</span>
-                        <span class="chat-profile-panel-meta-value">${panel.action || '暂无动作'}</span>
+                    <div style="background: #f2f2f7; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="font-size: 11px; color: #8e8e93; font-weight: 700;">动作</div>
+                        <div style="font-size: 13px; color: #333; line-height: 1.4; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${panel.action || '暂无'}</div>
+                    </div>
+                    <div style="background: #f2f2f7; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="font-size: 11px; color: #8e8e93; font-weight: 700;">心情</div>
+                        <div style="font-size: 13px; color: #333; line-height: 1.4; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${panel.mood || '平静'}</div>
+                    </div>
+                    <div style="background: #f2f2f7; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="font-size: 11px; color: #8e8e93; font-weight: 700;">表情</div>
+                        <div style="font-size: 13px; color: #333; line-height: 1.4; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${panel.expression || '自然'}</div>
                     </div>
                 </div>
             </div>
@@ -335,42 +343,59 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = friend.nickname || friend.realName || 'Unknown';
         const signature = friend.signature || '这个人很懒，什么都没写';
         const onlineLabel = (panel.status || friend.status || 'online').toString().trim() || 'online';
+        
+        const affection = typeof panel.affection === 'number' ? panel.affection : 50;
+        const affectionChange = typeof panel.affectionChange === 'number' ? panel.affectionChange : 0;
+        const affectionChangeStr = affectionChange >= 0 ? `+${affectionChange}` : `${affectionChange}`;
 
         panelEl.innerHTML = `
-            <div class="chat-profile-panel-card">
-                <div class="gmp-header chat-profile-panel-header">
-                    <div class="gmp-avatar-wrapper">
-                        <div class="gmp-avatar"><img src="${avatarUrl}"></div>
-                        <div class="gmp-status-bubble chat-profile-panel-header-status">${onlineLabel}</div>
-                    </div>
-                    <button type="button" class="chat-profile-panel-close" aria-label="关闭">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="gmp-body chat-profile-panel-body">
-                    <div class="gmp-name-row">
-                        <div class="gmp-name">${name}</div>
-                    </div>
-                    <div class="gmp-signature">${signature}</div>
-                    <div class="chat-profile-panel-content">
-                        ${window.imChat.buildProfilePanelBody(friend, activeTab)}
-                    </div>
-                    <div class="chat-profile-panel-tabs">
-                        <button type="button" class="chat-profile-panel-tab ${activeTab === 'thought' ? 'active' : ''}" data-tab="thought">心声</button>
-                        <button type="button" class="chat-profile-panel-tab ${activeTab === 'events' ? 'active' : ''}" data-tab="events">事件</button>
-                    </div>
-                </div>
-                <div class="chat-profile-event-detail-overlay" style="display:none;">
-                    <div class="chat-profile-event-detail-card">
-                        <button type="button" class="chat-profile-event-detail-close" aria-label="关闭">
+            <div style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 320px; margin: 0 auto;">
+                <div class="chat-profile-panel-card" style="width: 100%;">
+                    <div class="gmp-header chat-profile-panel-header" style="position: relative;">
+                        <div class="gmp-avatar-wrapper">
+                            <div class="gmp-avatar"><img src="${avatarUrl}"></div>
+                            <div class="gmp-status-bubble chat-profile-panel-header-status">${onlineLabel}</div>
+                        </div>
+                        <button type="button" class="chat-profile-panel-close" aria-label="关闭">
                             <i class="fas fa-times"></i>
                         </button>
-                        <div class="chat-profile-event-detail-label">记忆详情</div>
-                        <div class="chat-profile-event-detail-title">事件详情</div>
-                        <div class="chat-profile-event-detail-time"></div>
-                        <div class="chat-profile-event-detail-desc"></div>
-                        <div class="chat-profile-event-detail-detail"></div>
                     </div>
+                    <div class="gmp-body chat-profile-panel-body">
+                        <div class="gmp-name-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div class="gmp-name">${name}</div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                                <div style="background: #f2f2f7; color: #8e8e93; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                                    <i class="fas fa-heart"></i> ${affection}
+                                </div>
+                                ${affectionChange !== 0 ? `<div style="font-size: 10px; color: #8e8e93; margin-top: 4px; font-weight: 600;">本次 ${affectionChangeStr}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="gmp-signature">${signature}</div>
+                        <div class="chat-profile-panel-content">
+                            ${window.imChat.buildProfilePanelBody(friend, activeTab)}
+                        </div>
+                    </div>
+                    <div class="chat-profile-event-detail-overlay" style="display:none;">
+                        <div class="chat-profile-event-detail-card">
+                            <button type="button" class="chat-profile-event-detail-close" aria-label="关闭">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <div class="chat-profile-event-detail-label">记忆详情</div>
+                            <div class="chat-profile-event-detail-title">事件详情</div>
+                            <div class="chat-profile-event-detail-time"></div>
+                            <div class="chat-profile-event-detail-desc"></div>
+                            <div class="chat-profile-event-detail-detail"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-profile-panel-floating-tabs" style="display: flex; flex-direction: row; gap: 20px; margin-top: 24px; z-index: 100;">
+                    <button type="button" class="chat-profile-panel-tab-btn ${activeTab === 'thought' ? 'active' : ''}" data-tab="thought" style="width: 52px; height: 52px; border-radius: 50%; border: none; background: ${activeTab === 'thought' ? '#111' : '#fff'}; color: ${activeTab === 'thought' ? '#fff' : '#111'}; box-shadow: 0 4px 16px rgba(0,0,0,0.15); display: flex; justify-content: center; align-items: center; font-size: 22px; cursor: pointer; transition: transform 0.2s, background 0.2s;">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <button type="button" class="chat-profile-panel-tab-btn ${activeTab === 'events' ? 'active' : ''}" data-tab="events" style="width: 52px; height: 52px; border-radius: 50%; border: none; background: ${activeTab === 'events' ? '#111' : '#fff'}; color: ${activeTab === 'events' ? '#fff' : '#111'}; box-shadow: 0 4px 16px rgba(0,0,0,0.15); display: flex; justify-content: center; align-items: center; font-size: 22px; cursor: pointer; transition: transform 0.2s, background 0.2s;">
+                        <i class="fas fa-flag"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -448,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        const tabButtons = panelEl.querySelectorAll('.chat-profile-panel-tab');
+        const tabButtons = panelEl.querySelectorAll('.chat-profile-panel-tab-btn');
         tabButtons.forEach((btn) => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();

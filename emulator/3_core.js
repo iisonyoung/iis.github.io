@@ -983,7 +983,7 @@ function enterJiggleMode() {
         plusBtn.className = 'jiggle-plus-btn';
         plusBtn.innerHTML = '<i class="fas fa-plus"></i>';
         plusBtn.style.position = 'absolute';
-        plusBtn.style.top = '20px';
+        plusBtn.style.top = 'env(safe-area-inset-top, 20px)';
         plusBtn.style.left = '24px';
         plusBtn.style.backgroundColor = 'rgba(255,255,255,0.5)';
         plusBtn.style.backdropFilter = 'blur(10px)';
@@ -1022,7 +1022,7 @@ function enterJiggleMode() {
         closeBtn.className = 'jiggle-close-btn';
         closeBtn.innerHTML = '<i class="fas fa-times"></i>';
         closeBtn.style.position = 'absolute';
-        closeBtn.style.top = '20px';
+        closeBtn.style.top = 'env(safe-area-inset-top, 20px)';
         closeBtn.style.right = '24px';
         closeBtn.style.backgroundColor = 'rgba(255,255,255,0.5)';
         closeBtn.style.backdropFilter = 'blur(10px)';

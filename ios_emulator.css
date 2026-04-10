@@ -109,6 +109,7 @@ html, body {
     user-select: none;
     -webkit-touch-callout: none;
     touch-action: pan-x;
+    padding-bottom: 0 !important;
 }
 .pages-container::-webkit-scrollbar {
     display: none;
@@ -122,6 +123,7 @@ html, body {
     justify-content: center;
     align-items: flex-start;
     padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: 0 !important;
     /* Removed padding-bottom: 170px; to prevent pushing the screen up and causing blank space below */
 }
 
@@ -2705,15 +2707,37 @@ body.hide-island .screen {
 
 /* Force Mobile Fullscreen & Remove Fake Phone Frame */
 @media (max-width: 600px), (display-mode: standalone) {
-    body {
-        background-color: var(--screen-bg);
+    html, body {
+        background-color: var(--screen-bg) !important;
+        height: 100vh !important; /* Fallback */
+        height: 100dvh !important;
+        min-height: 100vh !important;
+        min-height: -webkit-fill-available !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        overflow: hidden !important;
     }
     
+    .phone-frame {
+        height: 100% !important;
+        max-height: 100% !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
     .bottom-sheet-overlay,
     .world-book-popup-overlay {
-        position: fixed;
-        inset: 0;
-        width: auto;
-        height: auto;
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
     }
 }

@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
             : true;
         const limit = Number(currentViewingGroup.memory.context.limit) > 0
             ? Number(currentViewingGroup.memory.context.limit)
-            : 50;
+            : 80;
 
         if (groupContextEnabledToggle) {
             groupContextEnabledToggle.checked = enabled;
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const summaryEnabled = !!currentViewingGroup.memory.summary.enabled;
         const summaryLimit = Number(currentViewingGroup.memory.summary.limit) > 0
             ? Number(currentViewingGroup.memory.summary.limit)
-            : 50;
+            : 80;
         const summaryPrompt = currentViewingGroup.memory.summary.prompt || '';
 
         if (groupSummaryEnabledToggle) {
@@ -749,10 +749,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!currentViewingGroup) return;
 
             const enabled = !!(groupContextEnabledToggle && groupContextEnabledToggle.checked);
-            let limit = groupContextLimitInput ? Number(groupContextLimitInput.value) : 50;
+            let limit = groupContextLimitInput ? Number(groupContextLimitInput.value) : 80;
 
             if (!Number.isFinite(limit) || limit <= 0) {
-                limit = 50;
+                limit = 80;
             }
 
             limit = Math.max(1, Math.floor(limit));
@@ -762,8 +762,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const sumEnabled = !!(groupSummaryEnabledToggle && groupSummaryEnabledToggle.checked);
-            let sumLimit = groupSummaryLimitInput ? Number(groupSummaryLimitInput.value) : 50;
-            if (!Number.isFinite(sumLimit) || sumLimit <= 0) sumLimit = 50;
+            let sumLimit = groupSummaryLimitInput ? Number(groupSummaryLimitInput.value) : 80;
+            if (!Number.isFinite(sumLimit) || sumLimit <= 0) sumLimit = 80;
             sumLimit = Math.max(1, Math.floor(sumLimit));
             const sumPrompt = groupSummaryPromptInput ? groupSummaryPromptInput.value.trim() : '';
 

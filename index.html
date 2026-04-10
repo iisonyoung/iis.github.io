@@ -4015,12 +4015,12 @@
                 </div>
                 
                 <!-- Chat Messages Area -->
-                <div style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; background: #fff;" id="tk-dm-messages-container">
+                <div style="flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 90px; display: flex; flex-direction: column; background: #fff;" id="tk-dm-messages-container">
                     <!-- Messages dynamically injected -->
                 </div>
 
                 <!-- Input Area (TikTok Style) -->
-                <div style="padding: 10px 15px 30px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px;">
+                <div class="tk-dm-input-area" style="padding: 10px 15px 30px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px; position: absolute; bottom: 0; left: 0; width: 100%; box-sizing: border-box; z-index: 100; transform: translateY(calc(var(--keyboard-height, 0px) * -1));">
                     <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #111; font-size: 20px; cursor: pointer;"><i class="fas fa-camera"></i></div>
                     <div style="flex: 1; display: flex; align-items: center; background: #f1f1f2; border-radius: 20px; padding: 5px 15px; position: relative;">
                         <input type="text" id="tk-dm-chat-input" placeholder="发送消息..." style="flex: 1; background: transparent; border: none; padding: 8px 0; font-size: 15px; outline: none; color: #111;">

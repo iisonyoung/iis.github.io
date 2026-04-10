@@ -248,6 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 thought: typeof parsed.thought === 'string' && parsed.thought.trim() ? parsed.thought.trim() : '',
                 location: typeof parsed.location === 'string' && parsed.location.trim() ? parsed.location.trim() : '',
                 action: typeof parsed.action === 'string' && parsed.action.trim() ? parsed.action.trim() : '',
+                mood: typeof parsed.mood === 'string' && parsed.mood.trim() ? parsed.mood.trim() : '',
+                expression: typeof parsed.expression === 'string' && parsed.expression.trim() ? parsed.expression.trim() : '',
+                affectionChange: typeof parsed.affectionChange === 'number' ? Math.max(-5, Math.min(5, parsed.affectionChange)) : 0,
                 status: 'online',
                 events: safeEvents
             };
@@ -276,6 +279,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
         friend.memory = window.imApp.normalizeFriendData(friend).memory;
 
+        let shouldSummarizeThisTurn = false;
+        const summaryLimit = parseInt(friend.memory.summary?.limit, 10) || 80;
+        const lastCount = friend.memory.lastSummaryMessageCount || 0;
+        const messagesSinceSummary = (friend.messages || []).length - lastCount;
+
+        if (summaryLimit > 0 && messagesSinceSummary >= summaryLimit) {
+            if (friend.memory.summary?.enabled) {
+                shouldSummarizeThisTurn = true;
+            } else {
+                const userAgreed = await new Promise(resolve => {
+                    if (window.showCustomModal) {
+                        window.showCustomModal('是否生成记忆总结？', '当前对话条数已达到设定的阈值，是否让 AI 生成一段总结并存入长期记忆？', {
+                            confirmText: '生成总结',
+                            cancelText: '暂不生成',
+                            onConfirm: () => resolve(true),
+                            onCancel: () => resolve(false)
+                        });
+                    } else if (confirm('当前对话条数已达到设定的阈值，是否让 AI 生成一段总结并存入长期记忆？')) {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                });
+
+                if (userAgreed) {
+                    shouldSummarizeThisTurn = true;
+                } else {
+                    if (window.imApp.commitScopedFriendChange) {
+                        await window.imApp.commitScopedFriendChange(friend.id, (targetFriend) => {
+                            if (!targetFriend) return;
+                            if (!targetFriend.memory) targetFriend.memory = {};
+                            targetFriend.memory.lastSummaryMessageCount = (targetFriend.messages || []).length;
+                        }, { silent: true, metaOnly: true });
+                        friend.memory.lastSummaryMessageCount = (friend.messages || []).length;
+                    }
+                }
+            }
+        }
+
         const relationshipText = friend.memory.relationships && friend.memory.relationships.length > 0
             ? friend.memory.relationships.map(rel => {
                 const npc = window.imData.friends.find(item => String(item.id) === String(rel.npcId));
@@ -285,9 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const commonMemorySections = [
             friend.memory.overview ? `Overview:\n${friend.memory.overview}` : '',
-            friend.memory.anniversaries ? `Anniversaries:\n${friend.memory.anniversaries}` : '',
             friend.memory.longTerm ? `Long-term Memory:\n${friend.memory.longTerm}` : '',
-            friend.memory.cherished ? `Cherished Memories:\n${friend.memory.cherished}` : '',
             friend.memory.context?.notes ? `Extra Context Notes:\n${friend.memory.context.notes}` : '',
             friend.memory.summary?.enabled && friend.memory.summary?.prompt ? `Auto Summary Prompt:\n${friend.memory.summary.prompt}` : '',
             `Relationship Network:\n${relationshipText}`,
@@ -321,13 +361,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     }).join('\n')
                     : 'None';
 
-                return `Current Profile Panel Snapshot:\nOnline Status: online\nLocation: ${panel.location || '未知位置'}\nAction: ${panel.action || '暂无动作'}\nThought: ${panel.thought || '暂无心声'}\nRecent Events:\n${eventSummary}`;
+                const affection = typeof panel.affection === 'number' ? panel.affection : 50;
+
+                return `Current Profile Panel Snapshot:\nOnline Status: online\nLocation: ${panel.location || '未知位置'}\nAction: ${panel.action || '暂无动作'}\nMood: ${panel.mood || '平静'}\nExpression: ${panel.expression || '自然'}\nAffection(好感度): ${affection}\nThought: ${panel.thought || '暂无心声'}\nRecent Events:\n${eventSummary}`;
             })()
         ].filter(Boolean).join('\n\n');
 
         const profilePanelRequirement = friend.type === 'group'
             ? ''
-            : `\n\nProfile Panel Requirement:\n- 在正常聊天气泡之外，你必须额外输出 1 个 <profile_panel>...</profile_panel>\n- <profile_panel> 内必须是合法 JSON，不能有 markdown 代码块，不能有额外解释文字\n- JSON 必须包含字段：thought、location、action、events\n- thought 必须是 45-60 字左右，严格基于当前聊天上下文，使用第一人称，像角色此刻没有说出口的心声\n- location 必须是 2-16 字，表示角色此刻所处的位置或场景\n- action 必须是 2-10 字，表示角色此刻正在做的动作或状态\n- 不要输出 online 或类似在线文案，在线状态由系统统一控制\n- events 必须是 JSON 数组；如果当前没有新的事件就输出 []；如果有事件，最多 3 条\n- 普通事件格式为 {"title":"事件标题","description":"事件描述","time":"时间或留空","type":"note"}\n- 如果你认为刚刚这段聊天是你在意的、想记住的，必须额外加入 1 条记忆请求事件，type 必须为 "memory_request"\n- 记忆请求事件格式为 {"title":"想记住某件事","description":"一句简短说明","time":"时间或留空","type":"memory_request","requestText":"想要记住的具体事情","detail":"为什么想记住或补充细节","confirmText":"确认","cancelText":"取消","memoryPayload":{"title":"珍视回忆标题","content":"要记住的内容","detail":"更多细节","reason":"想记住的原因","createdAt":"时间或留空","sourceThought":"可留空"}}\n- 只有当你真的觉得值得记住时才输出 memory_request，不能每次都输出\n- thought、location、action、events 必须和当前聊天内容连贯，不能复读，不能脱离角色人设`;
+            : `\n\nProfile Panel Requirement:\n- 在正常聊天气泡之外，你必须额外输出 1 个 <profile_panel>...</profile_panel>\n- <profile_panel> 内必须是合法 JSON，不能有 markdown 代码块，不能有额外解释文字\n- JSON 必须包含字段：thought、location、action、mood、expression、affectionChange、events\n- thought 必须是 45-60 字左右，严格基于当前聊天上下文，使用第一人称，像角色此刻没有说出口的心声\n- location 必须是 2-16 字，表示角色此刻所处的位置或场景\n- action 必须是 2-10 字，表示角色此刻正在做的动作或状态\n- mood 必须是 2-10 字，表示角色此刻的心情\n- expression 必须是 2-10 字，表示角色此刻的面部表情或神态\n- affectionChange 必须是整数（范围 -5 到 5），表示你对用户好感度因本轮对话产生的增减变化\n- 不要输出 online 或类似在线文案，在线状态由系统统一控制\n- events 必须是 JSON 数组；如果当前没有新的事件就输出 []；如果有事件，最多 3 条\n- 普通事件格式为 {"title":"事件标题","description":"事件描述","time":"时间或留空","type":"note"}\n- 如果你认为刚刚这段聊天是你在意的、想记住的，必须额外加入 1 条记忆请求事件，type 必须为 "memory_request"\n- 记忆请求事件格式为 {"title":"想记住某件事","description":"一句简短说明","time":"时间或留空","type":"memory_request","requestText":"想要记住的具体事情","detail":"为什么想记住或补充细节","confirmText":"确认","cancelText":"取消","memoryPayload":{"title":"珍视回忆标题","content":"要记住的内容","detail":"更多细节","reason":"想记住的原因","createdAt":"时间或留空","sourceThought":"可留空"}}\n- 只有当你真的觉得值得记住时才输出 memory_request，不能每次都输出\n- thought、location、action、mood、expression、events 必须和当前聊天内容连贯，不能复读，不能脱离角色人设`;
 
         let systemPrompt = '';
         const effectiveUserPersona = window.imApp?.getEffectivePersonaForFriend
@@ -377,9 +419,14 @@ ${allowedSpeakerNames.length > 0 ? allowedSpeakerNames.join('、') : 'None'}${af
 ${commonMemorySections || 'None'}`;
 
         } else {
+            const currentTime = new Date();
+            const timeString = `${currentTime.getFullYear()}年${currentTime.getMonth() + 1}月${currentTime.getDate()}日 ${currentTime.getHours()}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
+            
             systemPrompt = `${systemDepthWorldBookContext ? `System Depth Rules (Highest Priority):\n${systemDepthWorldBookContext}\n\n` : ''}${beforeRoleWorldBookContext ? `Before Role Rules:\n${beforeRoleWorldBookContext}\n\n` : ''}You are playing the role of ${friend.realName || friend.nickname}. 
-Your persona is: ${friend.persona || 'No specific persona'}. 
-You are talking to ${userState.name}, whose persona is: ${effectiveUserPersona || 'A normal user'}.${afterRoleWorldBookContext ? `\n\nAfter Role Rules:\n${afterRoleWorldBookContext}` : ''}
+【核心设定/Core Persona】：${friend.persona || 'No specific persona'}。
+You are talking to ${userState.name}, whose persona is: ${effectiveUserPersona || 'A normal user'}。
+【强制要求】：你必须在接下来的每一句对话、动作和心声中，深刻且精准地体现出你自己的【核心设定】，同时充分关注并根据用户的设定做出互动，绝对不能偏离人设！
+当前系统时间是：${timeString}。请在对话和心声中自然地感知并体现出对当前时间（如早晚、日期）的认知。${afterRoleWorldBookContext ? `\n\nAfter Role Rules:\n${afterRoleWorldBookContext}` : ''}
 Reply naturally as your character in a chat app.
 请根据上下文，记忆，人设进行回复，一次按需求回复2-8条气泡。
 1. 如果用户刚刚给你转账，你可以选择正常文字回复，也可以额外输出 1 个支付对象表示“收下转账”；如果你想给用户转账，也可以输出 1 个支付对象表示“你向用户转账”。
@@ -408,6 +455,28 @@ ${commonMemorySections || 'None'}${profilePanelRequirement}`;
             }
         }
         if (messages.length === 1) messages.push({ role: 'user', content: 'Hello' });
+
+        const trailingContexts = [];
+        if (friend.memory && friend.memory.anniversaries && String(friend.memory.anniversaries).trim()) {
+            trailingContexts.push(`[Anniversaries / 纪念日 - 请关注以下纪念日信息：]\n${friend.memory.anniversaries}`);
+        }
+        if (friend.memory && friend.memory.cherished && String(friend.memory.cherished).trim()) {
+            trailingContexts.push(`[Important Cherished Memories / 珍视回忆 - 请深刻记住并参考这些回忆：]\n${friend.memory.cherished}`);
+        }
+        if (trailingContexts.length > 0) {
+            messages.push({
+                role: 'system',
+                content: trailingContexts.join('\n\n')
+            });
+        }
+
+        if (shouldSummarizeThisTurn) {
+            const summaryPrompt = friend.memory.summary?.prompt || window.imApp.createDefaultMemory().summary.prompt;
+            messages.push({
+                role: 'system',
+                content: `【系统指令】：本次回复除了正常的聊天内容外，你必须额外输出一个 <summary_block>...</summary_block>。\n在标签内，请根据以下提示词对最近的对话进行总结：\n${summaryPrompt}\n总结必须尽量简明扼要，且包含具体的关键信息。`
+            });
+        }
 
         // Skip API call and return immediately if chatting with official account
         if (friend.type === 'official') {
@@ -448,6 +517,49 @@ ${commonMemorySections || 'None'}${profilePanelRequirement}`;
                 fullReply = window.imChat.removeTaggedBlock(fullReply, 'profile_panel');
             }
 
+            const summaryBlock = window.imChat.extractTaggedBlock(fullReply, 'summary_block');
+            if (summaryBlock) {
+                fullReply = window.imChat.removeTaggedBlock(fullReply, 'summary_block');
+                
+                if (window.imApp.commitScopedFriendChange) {
+                    await window.imApp.commitScopedFriendChange(friend.id, (targetFriend) => {
+                        if (!targetFriend) return;
+                        if (!targetFriend.memory) targetFriend.memory = {};
+                        if (!Array.isArray(targetFriend.memory.longTermEntries)) {
+                            targetFriend.memory.longTermEntries = [];
+                            if (targetFriend.memory.longTerm) {
+                                targetFriend.memory.longTermEntries.push({
+                                    id: `ltm-${Date.now()}-0`,
+                                    title: '原有长期记忆',
+                                    content: targetFriend.memory.longTerm,
+                                    time: ''
+                                });
+                            }
+                        }
+                        
+                        const currentTime = new Date();
+                        const timeString = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, '0')}-${String(currentTime.getDate()).padStart(2, '0')} ${String(currentTime.getHours()).padStart(2, '0')}:${String(currentTime.getMinutes()).padStart(2, '0')}`;
+                        
+                        targetFriend.memory.longTermEntries.push({
+                            id: `ltm-${Date.now()}-1`,
+                            title: '对话总结',
+                            content: summaryBlock,
+                            time: timeString
+                        });
+                        
+                        targetFriend.memory.lastSummaryMessageCount = (targetFriend.messages || []).length + 1;
+                    }, { silent: true, metaOnly: true });
+                }
+            } else if (shouldSummarizeThisTurn) {
+                if (window.imApp.commitScopedFriendChange) {
+                    await window.imApp.commitScopedFriendChange(friend.id, (targetFriend) => {
+                        if (!targetFriend) return;
+                        if (!targetFriend.memory) targetFriend.memory = {};
+                        targetFriend.memory.lastSummaryMessageCount = (targetFriend.messages || []).length + 1;
+                    }, { silent: true, metaOnly: true });
+                }
+            }
+
             if (nextProfilePanel && friend.type !== 'group') {
                 const profileFriend = getLiveFriendById(friend.id) || friend;
 
@@ -459,35 +571,52 @@ ${commonMemorySections || 'None'}${profilePanelRequirement}`;
                             ? window.imApp.createDefaultProfilePanel(targetFriend)
                             : (targetFriend.profilePanel || { activeTab: 'thought', thought: '', status: 'online', events: [] });
 
+                        const oldAffection = typeof basePanel.affection === 'number' ? basePanel.affection : 50;
+                        const affectionChange = nextProfilePanel.affectionChange || 0;
+                        const newAffection = Math.max(0, Math.min(100, oldAffection + affectionChange));
+
                         targetFriend.profilePanel = {
                             ...basePanel,
                             thought: nextProfilePanel.thought || basePanel.thought || '',
                             location: nextProfilePanel.location || basePanel.location || '未知位置',
                             action: nextProfilePanel.action || basePanel.action || '暂无动作',
+                            mood: nextProfilePanel.mood || basePanel.mood || '平静',
+                            expression: nextProfilePanel.expression || basePanel.expression || '自然',
+                            affection: newAffection,
+                            affectionChange: affectionChange,
                             status: 'online',
-                            events: Array.isArray(nextProfilePanel.events)
-                                ? nextProfilePanel.events.map((eventItem, index) => {
-                                    const safeId = eventItem?.id != null ? eventItem.id : `event-${Date.now()}-${index}`;
-                                    return {
-                                        ...eventItem,
-                                        id: safeId,
-                                        status: eventItem?.status || 'pending',
-                                        confirmText: eventItem?.confirmText || '确认',
-                                        cancelText: eventItem?.cancelText || '取消',
-                                        memoryPayload: eventItem?.memoryPayload && typeof eventItem.memoryPayload === 'object'
-                                            ? {
-                                                title: eventItem.memoryPayload.title || eventItem?.title || '珍视回忆',
-                                                content: eventItem.memoryPayload.content || eventItem?.requestText || eventItem?.description || '',
-                                                detail: eventItem.memoryPayload.detail || eventItem?.detail || '',
-                                                reason: eventItem.memoryPayload.reason || '',
-                                                sourceEventId: eventItem.memoryPayload.sourceEventId || String(safeId),
-                                                createdAt: eventItem.memoryPayload.createdAt || eventItem?.time || '',
-                                                sourceThought: eventItem.memoryPayload.sourceThought || nextProfilePanel.thought || ''
-                                            }
-                                            : null
-                                    };
-                                })
-                                : (basePanel.events || [])
+                            events: (() => {
+                                const existingEvents = Array.isArray(basePanel.events) ? basePanel.events : [];
+                                const mergedEvents = [...existingEvents];
+                                
+                                if (Array.isArray(nextProfilePanel.events)) {
+                                    nextProfilePanel.events.forEach((eventItem, index) => {
+                                        const safeId = eventItem?.id != null ? eventItem.id : `event-${Date.now()}-${index}`;
+                                        const newEv = {
+                                            ...eventItem,
+                                            id: safeId,
+                                            status: eventItem?.status || 'pending',
+                                            confirmText: eventItem?.confirmText || '确认',
+                                            cancelText: eventItem?.cancelText || '取消',
+                                            memoryPayload: eventItem?.memoryPayload && typeof eventItem.memoryPayload === 'object'
+                                                ? {
+                                                    title: eventItem.memoryPayload.title || eventItem?.title || '珍视回忆',
+                                                    content: eventItem.memoryPayload.content || eventItem?.requestText || eventItem?.description || '',
+                                                    detail: eventItem.memoryPayload.detail || eventItem?.detail || '',
+                                                    reason: eventItem.memoryPayload.reason || '',
+                                                    sourceEventId: eventItem.memoryPayload.sourceEventId || String(safeId),
+                                                    createdAt: eventItem.memoryPayload.createdAt || eventItem?.time || '',
+                                                    sourceThought: eventItem.memoryPayload.sourceThought || nextProfilePanel.thought || ''
+                                                }
+                                                : null
+                                        };
+                                        if (!mergedEvents.some(oe => oe.title === newEv.title)) {
+                                            mergedEvents.push(newEv);
+                                        }
+                                    });
+                                }
+                                return mergedEvents.slice(-5);
+                            })()
                         };
                         targetFriend.latestThought = targetFriend.profilePanel.thought;
                         targetFriend.status = 'online';

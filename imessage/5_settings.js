@@ -849,7 +849,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${entries.map((entry) => `
                             <button type="button" class="chat-memory-modal-cherished-card" data-entry-id="${entry.id}">
                                 <div class="chat-memory-modal-cherished-card-title">${entry.title || '珍视回忆'}</div>
-                                <div class="chat-memory-modal-cherished-card-content">${entry.content || ''}</div>
                                 <div class="chat-memory-modal-cherished-card-time">${entry.createdAt || '点击查看详情'}</div>
                             </button>
                         `).join('')}
@@ -880,11 +879,162 @@ document.addEventListener('DOMContentLoaded', () => {
                 ui.contentEl.innerHTML = buildTextMemoryModalHtml('珍视回忆', memory.cherished, currentConfig.emptyText);
             }
         } else if (type === 'overview') {
-            ui.contentEl.innerHTML = buildTextMemoryModalHtml('总览', memory.overview, currentConfig.emptyText);
+            const messageCount = Array.isArray(normalizedFriend.messages) ? normalizedFriend.messages.length : 0;
+            const tokenCount = Array.isArray(normalizedFriend.messages) ? normalizedFriend.messages.reduce((sum, msg) => sum + (msg.content || msg.text || '').length, 0) : 0;
+            
+            let firstMsgTime = Date.now();
+            let lastMsgTime = Date.now();
+            if (messageCount > 0) {
+                firstMsgTime = normalizedFriend.messages[0].timestamp || Date.now();
+                lastMsgTime = normalizedFriend.messages[messageCount - 1].timestamp || Date.now();
+            }
+            const days = Math.max(1, Math.ceil((Date.now() - firstMsgTime) / (1000 * 60 * 60 * 24)));
+            
+            const lastTimeStr = window.imApp.formatTime ? window.imApp.formatTime(lastMsgTime) : new Date(lastMsgTime).toLocaleString();
+
+            const statsHtml = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    <div style="background: #f8f8fb; border: 1px solid #ececf2; border-radius: 12px; padding: 10px; text-align: center;">
+                        <div style="font-size: 11px; color: #8e8e93; margin-bottom: 4px;">聊天总数</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #111;">${messageCount}</div>
+                    </div>
+                    <div style="background: #f8f8fb; border: 1px solid #ececf2; border-radius: 12px; padding: 10px; text-align: center;">
+                        <div style="font-size: 11px; color: #8e8e93; margin-bottom: 4px;">建联天数</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #111;">${days}</div>
+                    </div>
+                    <div style="background: #f8f8fb; border: 1px solid #ececf2; border-radius: 12px; padding: 10px; text-align: center;">
+                        <div style="font-size: 11px; color: #8e8e93; margin-bottom: 4px;">总Token估算</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #111;">${tokenCount}</div>
+                    </div>
+                    <div style="background: #f8f8fb; border: 1px solid #ececf2; border-radius: 12px; padding: 10px; text-align: center;">
+                        <div style="font-size: 11px; color: #8e8e93; margin-bottom: 4px;">最后聊天</div>
+                        <div style="font-size: 13px; font-weight: 700; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${messageCount > 0 ? lastTimeStr : '无'}</div>
+                    </div>
+                </div>
+            `;
+            ui.contentEl.innerHTML = statsHtml + buildTextMemoryModalHtml('总览', memory.overview, currentConfig.emptyText);
         } else if (type === 'anniversaries') {
-            ui.contentEl.innerHTML = buildTextMemoryModalHtml('纪念日', memory.anniversaries, currentConfig.emptyText);
+            const addBtnHtml = `
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                    <button type="button" id="add-birthday-btn" style="border: none; background: #111; color: #fff; border-radius: 12px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                        <i class="fas fa-plus"></i> 添加纪念日
+                    </button>
+                </div>
+            `;
+            ui.contentEl.innerHTML = addBtnHtml + buildTextMemoryModalHtml('纪念日', memory.anniversaries, currentConfig.emptyText);
+
+            setTimeout(() => {
+                const addBtn = document.getElementById('add-birthday-btn');
+                if (addBtn) {
+                    addBtn.addEventListener('click', () => {
+                        const modalHtml = `
+                            <div id="add-anniversary-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; display:flex; justify-content:center; align-items:center;">
+                                <div style="background:#fff; width:300px; border-radius:20px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); animation: popIn 0.2s ease-out;">
+                                    <div style="font-size:18px; font-weight:700; text-align:center; margin-bottom:16px;">添加纪念日</div>
+                                    <div style="margin-bottom:12px;">
+                                        <div style="font-size:13px; color:#8e8e93; margin-bottom:4px; font-weight:600;">纪念日名称</div>
+                                        <input type="text" id="anniversary-name" placeholder="例如：认识100天" style="width:100%; padding:12px; border-radius:12px; border:1px solid #e5e5ea; outline:none; font-size:15px; background:#f8f8fb;"/>
+                                    </div>
+                                    <div style="margin-bottom:20px;">
+                                        <div style="font-size:13px; color:#8e8e93; margin-bottom:4px; font-weight:600;">日期 (年月日)</div>
+                                        <input type="date" id="anniversary-date" style="width:100%; padding:12px; border-radius:12px; border:1px solid #e5e5ea; outline:none; font-size:15px; background:#f8f8fb;"/>
+                                    </div>
+                                    <div style="display:flex; gap:10px;">
+                                        <button id="anniversary-cancel" style="flex:1; padding:12px; border:none; background:#f2f2f7; color:#111; border-radius:12px; font-weight:600; font-size:15px; cursor:pointer;">取消</button>
+                                        <button id="anniversary-confirm" style="flex:1; padding:12px; border:none; background:#111; color:#fff; border-radius:12px; font-weight:600; font-size:15px; cursor:pointer;">添加</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        const modalWrapper = document.createElement('div');
+                        modalWrapper.innerHTML = modalHtml;
+                        document.body.appendChild(modalWrapper);
+                        
+                        const modalOverlay = document.getElementById('add-anniversary-modal');
+                        const nameInput = document.getElementById('anniversary-name');
+                        const dateInput = document.getElementById('anniversary-date');
+                        const cancelBtn = document.getElementById('anniversary-cancel');
+                        const confirmBtn = document.getElementById('anniversary-confirm');
+
+                        const closeModal = () => {
+                            if (modalOverlay && modalOverlay.parentNode) {
+                                modalOverlay.parentNode.removeChild(modalOverlay);
+                            }
+                        };
+
+                        cancelBtn.addEventListener('click', closeModal);
+                        modalOverlay.addEventListener('click', (e) => {
+                            if(e.target === modalOverlay) closeModal();
+                        });
+
+                        confirmBtn.addEventListener('click', async () => {
+                            const nameVal = nameInput.value.trim();
+                            const dateVal = dateInput.value.trim();
+                            if (!nameVal || !dateVal) {
+                                if (window.showToast) window.showToast('请填写完整名称和日期');
+                                return;
+                            }
+                            
+                            const val = `${nameVal}：${dateVal}`;
+                            const currentText = normalizedFriend.memory.anniversaries || '';
+                            const newText = currentText ? currentText + '\n' + val : val;
+                            
+                            const saved = await window.imApp.commitScopedFriendChange(normalizedFriend, (targetFriend) => {
+                                if (!targetFriend.memory) targetFriend.memory = window.imApp.createDefaultMemory();
+                                targetFriend.memory.anniversaries = newText;
+                            }, { silent: true });
+                            
+                            if (saved) {
+                                if (window.showToast) window.showToast('已添加');
+                                const latestFriend = window.imData.friends.find(f => String(f.id) === String(normalizedFriend.id)) || normalizedFriend;
+                                window.imApp.showChatMemoryModal('anniversaries', latestFriend);
+                                
+                                const input = document.getElementById('chat-memory-anniversaries-input');
+                                if (input) input.value = newText;
+                            }
+                            closeModal();
+                        });
+                    });
+                }
+            }, 50);
         } else {
-            ui.contentEl.innerHTML = buildTextMemoryModalHtml('长期记忆', memory.longTerm, currentConfig.emptyText);
+            const entries = Array.isArray(memory.longTermEntries) ? memory.longTermEntries : [];
+            if (entries.length > 0) {
+                ui.contentEl.innerHTML = `
+                    <div class="chat-memory-modal-cherished-list">
+                        ${entries.map((entry) => `
+                            <button type="button" class="chat-memory-modal-cherished-card" data-entry-id="${entry.id}">
+                                <div class="chat-memory-modal-cherished-card-title">${entry.title || '长期记忆'}</div>
+                                <div class="chat-memory-modal-cherished-card-time">${entry.time || '点击查看详情'}</div>
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+
+                const cardButtons = ui.contentEl.querySelectorAll('.chat-memory-modal-cherished-card');
+                cardButtons.forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const entryId = btn.getAttribute('data-entry-id') || '';
+                        const latestFriend = window.imData.currentSettingsFriend
+                            && String(window.imData.currentSettingsFriend.id) === String(normalizedFriend.id)
+                            ? window.imData.currentSettingsFriend
+                            : normalizedFriend;
+                        const latestEntries = Array.isArray(latestFriend.memory?.longTermEntries)
+                            ? latestFriend.memory.longTermEntries
+                            : [];
+                        const targetEntry = latestEntries.find((entry) => String(entry.id) === String(entryId));
+                        if (targetEntry) {
+                            showCherishedMemoryDetail({
+                                title: targetEntry.title,
+                                createdAt: targetEntry.time,
+                                content: targetEntry.content
+                            });
+                        }
+                    });
+                });
+            } else {
+                ui.contentEl.innerHTML = buildTextMemoryModalHtml('长期记忆', memory.longTerm, currentConfig.emptyText);
+            }
         }
 
         ui.overlay.style.display = 'flex';
@@ -1724,7 +1874,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.cardsContainer.innerHTML = entries.map((entry) => `
             <button type="button" class="chat-memory-cherished-card" data-entry-id="${entry.id}">
                 <div class="chat-memory-cherished-card-title">${entry.title || '珍视回忆'}</div>
-                <div class="chat-memory-cherished-card-content">${entry.content || ''}</div>
                 <div class="chat-memory-cherished-card-time">${entry.createdAt || '点击查看详情'}</div>
             </button>
         `).join('');
@@ -1769,12 +1918,12 @@ document.addEventListener('DOMContentLoaded', () => {
             anniversaries: chatMemoryAnniversariesInput ? chatMemoryAnniversariesInput.value : '',
             context: {
                 enabled: chatMemoryContextEnabled ? chatMemoryContextEnabled.checked : true,
-                limit: chatMemoryContextLimit && Number(chatMemoryContextLimit.value) > 0 ? Number(chatMemoryContextLimit.value) : 30,
+                limit: chatMemoryContextLimit && Number(chatMemoryContextLimit.value) > 0 ? Number(chatMemoryContextLimit.value) : 80,
                 notes: friend.memory?.context?.notes || ''
             },
             summary: {
                 enabled: chatMemorySummaryEnabled ? chatMemorySummaryEnabled.checked : false,
-                limit: chatMemorySummaryLimit && Number(chatMemorySummaryLimit.value) > 0 ? Number(chatMemorySummaryLimit.value) : 50,
+                limit: chatMemorySummaryLimit && Number(chatMemorySummaryLimit.value) > 0 ? Number(chatMemorySummaryLimit.value) : 80,
                 prompt: chatMemorySummaryPromptInput ? chatMemorySummaryPromptInput.value : ''
             },
             longTerm: chatMemoryLongtermInput ? chatMemoryLongtermInput.value : '',
@@ -1920,9 +2069,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chatMemoryOverviewInput) chatMemoryOverviewInput.value = friend.memory.overview || '';
         if (chatMemoryAnniversariesInput) chatMemoryAnniversariesInput.value = friend.memory.anniversaries || '';
         if (chatMemoryContextEnabled) chatMemoryContextEnabled.checked = typeof friend.memory.context.enabled === 'boolean' ? friend.memory.context.enabled : true;
-        if (chatMemoryContextLimit) chatMemoryContextLimit.value = friend.memory.context.limit || 30;
+        if (chatMemoryContextLimit) chatMemoryContextLimit.value = friend.memory.context.limit || 80;
         if (chatMemorySummaryEnabled) chatMemorySummaryEnabled.checked = !!friend.memory.summary.enabled;
-        if (chatMemorySummaryLimit) chatMemorySummaryLimit.value = friend.memory.summary.limit || 50;
+        if (chatMemorySummaryLimit) chatMemorySummaryLimit.value = friend.memory.summary.limit || 80;
         if (chatMemorySummaryPromptInput) chatMemorySummaryPromptInput.value = friend.memory.summary.prompt || '';
         if (chatMemoryLongtermInput) chatMemoryLongtermInput.value = friend.memory.longTerm || '';
         if (chatMemoryCherishedInput) chatMemoryCherishedInput.value = friend.memory.cherished || '';

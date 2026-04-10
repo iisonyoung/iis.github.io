@@ -486,20 +486,6 @@ document.addEventListener('DOMContentLoaded', () => {
         wtChatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendWtMessage();
         });
-        
-        // 手机端软键盘弹出时的视口适配 (将气泡往上推以防被挡住)
-        wtChatInput.addEventListener('focus', () => {
-            if (window.innerWidth <= 768 || ('ontouchstart' in window)) {
-                wtBubble.style.top = '60px';
-                wtBubble.style.transition = 'top 0.3s ease';
-            }
-        });
-        
-        wtChatInput.addEventListener('blur', () => {
-            if (window.innerWidth <= 768 || ('ontouchstart' in window)) {
-                wtBubble.style.top = '120px';
-            }
-        });
     }
 
     // WT Append Message
@@ -727,17 +713,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Collect World Book info
             let wbContext = '';
+            
+            // 1. 全局世界书
             if (window.getWorldBooks) {
                 const allWb = window.getWorldBooks();
                 const globalWb = allWb.filter(b => b.isGlobal);
                 if (globalWb.length > 0) {
-                    wbContext = "世界观背景设定:\n";
+                    wbContext += "世界观背景设定:\n";
                     globalWb.forEach(b => {
                         b.entries.forEach(e => {
                             wbContext += `- ${e.keyword}: ${e.content}\n`;
                         });
                     });
+                    wbContext += "\n";
                 }
+            }
+
+            // 2. 内置世界书
+            if (window.getBuiltinWorldBooks) {
+                const builtinWb = window.getBuiltinWorldBooks().filter(b => b.isGlobal);
+                if (builtinWb.length > 0) {
+                    wbContext += "内置设定:\n";
+                    builtinWb.forEach(b => {
+                        b.entries.forEach(e => {
+                            wbContext += `- ${e.keyword}: ${e.content}\n`;
+                        });
+                    });
+                    wbContext += "\n";
+                }
+            }
+
+            // 3. 角色记忆
+            if (char && char.memories && char.memories.length > 0) {
+                wbContext += "角色记忆:\n";
+                char.memories.forEach(m => {
+                    wbContext += `- ${m.text}\n`;
+                });
+                wbContext += "\n";
             }
 
             // Setup User Persona context
@@ -1322,17 +1334,43 @@ ${chatHistoryStr}
 
             // Collect World Book info
             let wbContext = '';
+            
+            // 1. 全局世界书
             if (window.getWorldBooks) {
                 const allWb = window.getWorldBooks();
                 const globalWb = allWb.filter(b => b.isGlobal);
                 if (globalWb.length > 0) {
-                    wbContext = "世界观背景设定:\n";
+                    wbContext += "世界观背景设定:\n";
                     globalWb.forEach(b => {
                         b.entries.forEach(e => {
                             wbContext += `- ${e.keyword}: ${e.content}\n`;
                         });
                     });
+                    wbContext += "\n";
                 }
+            }
+
+            // 2. 内置世界书
+            if (window.getBuiltinWorldBooks) {
+                const builtinWb = window.getBuiltinWorldBooks().filter(b => b.isGlobal);
+                if (builtinWb.length > 0) {
+                    wbContext += "内置设定:\n";
+                    builtinWb.forEach(b => {
+                        b.entries.forEach(e => {
+                            wbContext += `- ${e.keyword}: ${e.content}\n`;
+                        });
+                    });
+                    wbContext += "\n";
+                }
+            }
+
+            // 3. 角色记忆
+            if (char && char.memories && char.memories.length > 0) {
+                wbContext += "角色记忆:\n";
+                char.memories.forEach(m => {
+                    wbContext += `- ${m.text}\n`;
+                });
+                wbContext += "\n";
             }
 
             // Setup User Persona context

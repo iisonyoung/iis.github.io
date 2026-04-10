@@ -34,9 +34,11 @@ window.imApp.createDefaultMemory = function() {
     return {
         overview: '',
         anniversaries: '',
-        context: { enabled: true, limit: 30, notes: '' },
-        summary: { enabled: false, limit: 50, prompt: '' },
+        context: { enabled: true, limit: 80, notes: '' },
+        summary: { enabled: false, limit: 80, prompt: '请按严格的时间线格式总结这段时间的近期事件。\n【格式要求】：必须是：\n[YYYY年MM月DD日 HH:MM] 总结内容\n[YYYY年MM月DD日 HH:MM] 总结内容\n\n【内容要求】：\n1. 必须以第三人称客观概括这段时间内双方发生了什么事。\n2. 必须精确包含角色和用户分别说了什么、做了什么、得出了什么结论或有何情绪。\n3. 使用最精简的语句，禁止啰嗦，但绝不允许遗漏或省略任何一件发生过的事情。' },
         longTerm: '',
+        longTermEntries: [],
+        lastSummaryMessageCount: 0,
         cherished: '',
         cherishedEntries: [],
         relationships: []
@@ -115,7 +117,7 @@ window.imApp.normalizeFriendData = function(friend) {
             enabled: typeof memory.context?.enabled === 'boolean' ? memory.context.enabled : defaultMemory.context.enabled,
             limit: Number(memory.context?.limit) > 0
                 ? Number(memory.context.limit)
-                : (isGroupChat ? 50 : defaultMemory.context.limit),
+                : (isGroupChat ? 80 : defaultMemory.context.limit),
             notes: memory.context?.notes || defaultMemory.context.notes
         },
         summary: {
@@ -124,6 +126,15 @@ window.imApp.normalizeFriendData = function(friend) {
             prompt: memory.summary?.prompt || defaultMemory.summary.prompt
         },
         longTerm: memory.longTerm || defaultMemory.longTerm,
+        longTermEntries: Array.isArray(memory.longTermEntries)
+            ? memory.longTermEntries.map((entry, index) => ({
+                id: entry?.id != null ? entry.id : `longterm-${index}`,
+                title: entry?.title || '长期记忆',
+                content: entry?.content || '',
+                createdAt: entry?.createdAt || ''
+            }))
+            : defaultMemory.longTermEntries,
+        lastSummaryMessageCount: typeof memory.lastSummaryMessageCount === 'number' ? memory.lastSummaryMessageCount : (normalized.messages.length || 0),
         cherished: memory.cherished || defaultMemory.cherished,
         cherishedEntries: Array.isArray(memory.cherishedEntries)
             ? memory.cherishedEntries.map((entry, index) => ({
@@ -146,7 +157,7 @@ window.imApp.normalizeFriendData = function(friend) {
 
 window.imApp.getContextLimit = function(friend) {
     const normalizedFriend = window.imApp.normalizeFriendData(friend || {});
-    const defaultContextLimit = normalizedFriend.type === 'group' ? 50 : 30;
+    const defaultContextLimit = normalizedFriend.type === 'group' ? 80 : 80;
 
     if (normalizedFriend.memory?.context?.enabled === false) {
         return 0;
@@ -2106,12 +2117,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalPromptConfirmBtn = document.getElementById('modal-prompt-confirm-btn');
 
     let currentModalCallback = null;
+    let currentModalCancelCallback = null;
 
     function showCustomModal(options) {
         if (!customModalOverlay) return;
         
         modalTitle.textContent = options.title || '提示';
         currentModalCallback = options.onConfirm;
+        currentModalCancelCallback = options.onCancel;
 
         if (options.type === 'prompt') {
             modalConfirmBtn.style.display = 'none';
@@ -2146,13 +2159,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function closeCustomModal() {
+    function closeCustomModal(isCancel = true) {
         if (!customModalOverlay) return;
         customModalOverlay.classList.remove('active');
         setTimeout(() => {
             customModalOverlay.style.display = 'none';
         }, 300);
+        if (isCancel && typeof currentModalCancelCallback === 'function') {
+            currentModalCancelCallback();
+        }
         currentModalCallback = null;
+        currentModalCancelCallback = null;
     }
 
     window.imApp.showCustomModal = showCustomModal;
@@ -2162,25 +2179,25 @@ document.addEventListener('DOMContentLoaded', () => {
     window.showCustomModal = showCustomModal;
     window.closeCustomModal = closeCustomModal;
 
-    if (modalCancelBtn) modalCancelBtn.addEventListener('click', closeCustomModal);
+    if (modalCancelBtn) modalCancelBtn.addEventListener('click', () => closeCustomModal(true));
     
     if (modalConfirmBtn) {
         modalConfirmBtn.addEventListener('click', () => {
             if (currentModalCallback) currentModalCallback(true);
-            closeCustomModal();
+            closeCustomModal(false);
         });
     }
 
     if (modalPromptConfirmBtn) {
         modalPromptConfirmBtn.addEventListener('click', () => {
             if (currentModalCallback) currentModalCallback(modalInput.value);
-            closeCustomModal();
+            closeCustomModal(false);
         });
     }
 
     if (customModalOverlay) {
         customModalOverlay.addEventListener('click', (e) => {
-            if (e.target === customModalOverlay) closeCustomModal();
+            if (e.target === customModalOverlay) closeCustomModal(true);
         });
     }
 

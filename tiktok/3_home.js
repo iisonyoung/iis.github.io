@@ -1314,18 +1314,37 @@ ${followedCharsContext}
         
         // Collect World Book info if any exist globally
         let wbContext = '';
+        
+        // 1. 全局世界书
         if (window.getWorldBooks) {
             const allWb = window.getWorldBooks();
             const globalWb = allWb.filter(b => b.isGlobal);
             if (globalWb.length > 0) {
-                wbContext = "世界观背景设定:\n";
+                wbContext += "世界观背景设定:\n";
                 globalWb.forEach(b => {
                     b.entries.forEach(e => {
                         wbContext += `- ${e.keyword}: ${e.content}\n`;
                     });
                 });
+                wbContext += "\n";
             }
         }
+
+        // 2. 内置世界书
+        if (window.getBuiltinWorldBooks) {
+            const builtinWb = window.getBuiltinWorldBooks().filter(b => b.isGlobal);
+            if (builtinWb.length > 0) {
+                wbContext += "内置设定:\n";
+                builtinWb.forEach(b => {
+                    b.entries.forEach(e => {
+                        wbContext += `- ${e.keyword}: ${e.content}\n`;
+                    });
+                });
+                wbContext += "\n";
+            }
+        }
+
+        // 3. (首页随机流暂不需要特定角色记忆，但可以预留)
 
         // Setup User Persona context
         let userPersonaContext = '';
@@ -1336,13 +1355,11 @@ ${followedCharsContext}
         const prompt = `
 你现在是一个 TikTok 视频内容生成器。请根据挂载的世界书与user人设，生成 3-5 条 TikTok 视频数据。
 要求：
-1. 整体风格符合世界观，仿真实tk网络视频，内容多样化，文案要具有“活人感”（例如碎碎念、吐槽、玩梗,也可以是一句摘的抄文学语录），切忌机器播报感。
+1. 整体风格符合世界观，仿真实tk网络视频，内容多样化，文案具有网感。
 2. 视频内容(sceneText)是由气泡包裹展现的文字，必须以第三人称视角描述简要的环境氛围、动作和语言描述，字数严格控制在 40-80 字之间。
-3. 必须为每个视频生成 3-5 条相关评论，每条评论要包含随机生成的在线头像URL (authorAvatar) 和评论者名字，评论内容与视频内容相关，具有活人感与网感，可以玩梗。
+3. 务必为每个视频生成 3-5 条相关评论，每条评论要包含随机生成的在线头像URL (authorAvatar) 和评论者名字。评论内容与视频内容相关，具有活人感与网感，可以玩梗。**如果情景合适（比如互相@或者接话），请在评论中追加 \`replies\` 数组（楼中楼回复）。**
 4. 视频发布者及评论者的头像 (authorAvatar) 需要多样化，不一定全是人，可以是风景、宠物、动漫等，符合人设。请混合使用不同类型的随机图片API，例如：
    - 随机风景/动物/物品：https://picsum.photos/150/150?random=随机数字
-   - 随机像素画：https://api.dicebear.com/7.x/pixel-art/svg?seed=随机字符
-   - 随机人像：https://api.dicebear.com/7.x/avataaars/svg?seed=随机字符
 5. 返回严格的 JSON 格式（不要有 markdown 代码块标记，不要多余文字），格式如下：
 [
   {
@@ -1355,7 +1372,20 @@ ${followedCharsContext}
     "commentsCount": 5,
     "shares": 12,
     "comments": [
-      { "authorName": "评论者A", "authorAvatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=def", "text": "真的！堵麻了", "likes": 12 }
+      { 
+        "authorName": "评论者A", 
+        "authorAvatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=def", 
+        "text": "真的！堵麻了", 
+        "likes": 12,
+        "replies": [
+           {
+             "authorName": "回复者B",
+             "authorAvatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=xyz",
+             "text": "回复内容",
+             "likes": 3
+           }
+        ]
+      }
     ]
   }
 ]
