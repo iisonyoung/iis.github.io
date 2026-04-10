@@ -45,55 +45,54 @@ input, textarea, [contenteditable] {
     -webkit-user-select: text;
 }
 
-html {
-    -webkit-text-size-adjust: 100%;
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-}
-
-body {
+html, body {
     margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
     font-family: var(--font-stack);
     font-weight: normal;
     background-color: #f0f2f5;
-    width: 100%;
-    height: 100%;
-    min-height: 100%;
-    overflow: hidden;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Phone Frame */
 .phone-frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     height: 100%;
-    position: relative;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     background-color: var(--screen-bg);
-    min-height: 0;
+    overflow: hidden;
 }
 
 .screen {
+    position: relative;
+    flex: 1;
     width: 100%;
     height: 100%;
-    flex: 1;
     background-color: var(--screen-bg);
     background-image: var(--home-bg-image);
     background-size: cover;
     background-position: center;
-    border-radius: 0;
     overflow: hidden;
-    position: relative;
     display: flex;
     flex-direction: column;
-    padding-top: 0; 
-    padding-bottom: 0; 
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
-    min-height: 0;
 }
 
 /* Pages Container */
@@ -126,13 +125,13 @@ body {
     justify-content: center;
     align-items: flex-start;
     padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: 170px;
+    /* Removed padding-bottom: 170px; to prevent pushing the screen up and causing blank space below */
 }
 
 /* Page Indicators */
 .page-indicators {
     position: absolute;
-    bottom: 130px;
+    bottom: calc(120px + env(safe-area-inset-bottom, 0px)); /* Adjusted to sit just above the dock */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -297,17 +296,17 @@ body {
 /* Home Search Pill */
 .home-search-pill {
     position: absolute;
-    bottom: 95px;
+    bottom: calc(140px + env(safe-area-inset-bottom, 0px)); /* Adjusted to sit above dots */
     left: 50%;
     transform: translateX(-50%);
-    background-color: rgba(255, 255, 255, 0.4); /* ÄÂĂÂÄÂĂÂÄÂĂÂ´ÄÂĂÂÄÂÄšĹžÄÂĂÂĂÂĂÂ§ÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂĂÂÄšÂ ÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂĂÂĂÂ§ÄÂĂÂÄÂĂÂÄÂÄšÂĂĹĄĂÂÄÂĂÂ */
+    background-color: rgba(255, 255, 255, 0.4); 
     backdrop-filter: blur(25px) saturate(180%);
     -webkit-backdrop-filter: blur(25px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.3);
     padding: 6px 18px;
     border-radius: 20px;
     font-size: 13px;
-    color: #666666; /* ÄÂĂÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂĂÂĂÂ§ÄÂĂÂÄÂĂÂĂÂĂÂ¤ÄÂĂÂ¸ÄÂĂÂ­ĂÂĂÂ§ÄÂĂÂÄÂĂÂ°ÄÂĂÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂ­ÄÂĂÂĂÂĂÂ¤ÄÂĂÂÄÂĂÂ */
+    color: #666666; 
     font-weight: 500;
     display: flex;
     align-items: center;
@@ -2711,40 +2710,8 @@ body.hide-island .screen {
 @media (max-width: 600px), (display-mode: standalone) {
     body {
         background-color: var(--screen-bg);
-        display: block;
-        min-height: 100%;
     }
     
-    .phone-frame {
-        position: relative;
-        top: auto;
-        bottom: auto;
-        left: auto;
-        right: auto;
-        height: 100% !important;
-        width: 100% !important;
-        max-width: none;
-        max-height: none;
-        border-radius: 0;
-        border: none;
-        padding: 0;
-        box-shadow: none;
-        transform: none;
-        background-color: var(--screen-bg);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-    }
-    
-    .screen {
-        border-radius: 0;
-        padding: 0;
-        height: 100%;
-        min-height: 0;
-        box-sizing: border-box;
-    }
-
     .bottom-sheet-overlay,
     .world-book-popup-overlay {
         position: fixed;
@@ -2752,5 +2719,4 @@ body.hide-island .screen {
         width: auto;
         height: auto;
     }
-    
 }
