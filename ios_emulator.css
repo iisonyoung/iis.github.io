@@ -49,8 +49,7 @@ html, body {
     margin: 0;
     padding: 0;
     width: 100%;
-    height: 100vh; /* Fallback for older browsers */
-    height: 100dvh; /* Modern mobile browsers precise height */
+    height: 100%; /* Better fullscreen coverage for iOS PWA than vh/dvh */
     position: fixed; /* Lock body position to prevent elastic scroll bouncing */
     top: 0;
     left: 0;
