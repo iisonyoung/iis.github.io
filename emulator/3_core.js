@@ -225,13 +225,25 @@ function readViewportMetrics() {
 }
 
 function applyViewportMetrics(metrics) {
+    // If running as a PWA in standalone mode, let CSS 100% handle the height naturally 
+    // to avoid clipping issues caused by dynamically calculated flawed heights.
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
     const root = document.documentElement;
     root.style.setProperty('--viewport-width', `${metrics.width}px`);
-    root.style.setProperty('--viewport-height', `${metrics.height}px`);
+    
+    if (isStandalone) {
+        root.style.setProperty('--viewport-height', '100%');
+        root.style.setProperty('--app-height', '100%');
+        root.style.setProperty('--visual-viewport-height', '100%');
+    } else {
+        root.style.setProperty('--viewport-height', `${metrics.height}px`);
+        root.style.setProperty('--app-height', `${metrics.height}px`);
+        root.style.setProperty('--visual-viewport-height', `${metrics.visualHeight}px`);
+    }
+    
     root.style.setProperty('--app-width', `${metrics.width}px`);
-    root.style.setProperty('--app-height', `${metrics.height}px`);
     root.style.setProperty('--visual-viewport-width', `${metrics.visualWidth}px`);
-    root.style.setProperty('--visual-viewport-height', `${metrics.visualHeight}px`);
     root.style.setProperty('--viewport-offset-top', `${metrics.offsetTop}px`);
     root.style.setProperty('--viewport-offset-left', `${metrics.offsetLeft}px`);
     root.style.setProperty('--viewport-page-top', `${metrics.pageTop}px`);

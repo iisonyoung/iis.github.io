@@ -50,14 +50,15 @@ html, body {
     padding: 0;
     width: 100%;
     height: 100%; 
-    position: fixed; /* Lock body position to prevent elastic scroll bouncing */
+    min-height: 100%;
+    position: fixed; /* Re-lock body position to prevent elastic scroll bouncing */
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: hidden; /* Prevent body scrolling/bouncing */
     font-family: var(--font-stack);
     font-weight: normal;
     background-color: #f0f2f5;
@@ -2308,7 +2309,7 @@ body.hide-island .screen {
     }
 
     .wb-centered-modal-card {
-        max-height: calc(var(--viewport-height, 100dvh) - max(40px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)));
+        max-height: calc(100% - max(40px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)));
     }
 }
 
@@ -2717,7 +2718,8 @@ body.hide-island .screen {
 @media (max-width: 600px), (display-mode: standalone) {
     html, body {
         background-color: var(--screen-bg) !important;
-        height: 100% !important;
+        width: 100% !important;
+        height: 100% !important; /* Standalone mode relies on the pure 100% of the device physical screen */
         min-height: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
