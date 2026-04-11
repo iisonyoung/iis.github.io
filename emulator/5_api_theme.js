@@ -1025,17 +1025,29 @@ if (fullscreenToggle) {
         const isChecked = e.target.checked;
         localStorage.setItem('user_fullscreen_pref', isChecked);
         if (isChecked) {
+            // Check if Native Fullscreen is available and permitted
             if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(err => {
-                    console.error("Fullscreen API error:", err);
-                    fullscreenToggle.checked = false;
-                    localStorage.setItem('user_fullscreen_pref', 'false');
-                    if (window.showToast) window.showToast('无法进入全屏');
+                    console.error("Fullscreen API error or not allowed in this context:", err);
+                    // Fallback to Pseudo Fullscreen via CSS class
+                    document.body.classList.add('pseudo-fullscreen-active');
+                    if (window.showToast) window.showToast('由于浏览器限制，已启用伪全屏适配');
                 });
+            } else if (document.documentElement.webkitRequestFullscreen) { // Safari fallback
+                document.documentElement.webkitRequestFullscreen();
+            } else {
+                // Total fallback if API doesn't exist
+                document.body.classList.add('pseudo-fullscreen-active');
+                if (window.showToast) window.showToast('已启用伪全屏适配');
             }
         } else {
+            // Exit Fullscreen
+            document.body.classList.remove('pseudo-fullscreen-active');
+            
             if (document.exitFullscreen && document.fullscreenElement) {
                 document.exitFullscreen().catch(err => console.error("Exit Fullscreen error:", err));
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
             }
         }
     });
