@@ -53,6 +53,10 @@ async function openChatTab(friend) {
                     : `<i class="fas fa-user"></i>`;
             }
 
+            const isSleeping = window.imApp.isCharacterSleeping(friend);
+            const statusLabel = isSleeping ? 'offline' : 'online';
+            const statusColor = isSleeping ? '#8e8e93' : '#34c759';
+
             const headerStyle = friend.type === 'group' 
                 ? `position: relative; top: 0; padding: 0 16px; align-items: center; justify-content: space-between; display: flex; pointer-events: none; width: 100%;`
                 : `position: relative; top: 0; padding: 0 16px; align-items: center;`;
@@ -71,7 +75,7 @@ async function openChatTab(friend) {
                    </div>
                    <div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start; margin-left: 8px; gap: 1px;">
                         <div class="ins-chat-name" style="font-size: 16px; font-weight: 600; line-height: 1.05;">${friend.nickname}</div>
-                        <div class="ins-chat-sign" style="font-size: 13px; color: #8e8e93; display: flex; align-items: center; gap: 4px; margin-top: 0; line-height: 1;">online</div>
+                        <div class="ins-chat-sign" style="font-size: 13px; color: #8e8e93; display: flex; align-items: center; gap: 4px; margin-top: 0; line-height: 1;"><div style="width:6px;height:6px;border-radius:50%;background:${statusColor}; flex-shrink:0;"></div><span>${statusLabel}</span></div>
                    </div>`;
             } else {
                 titleHtml = `<div style="position: relative; display: inline-block;">
@@ -81,7 +85,7 @@ async function openChatTab(friend) {
                    </div>
                    <div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start; margin-left: 8px; gap: 1px;">
                         <div class="ins-chat-name" style="font-size: 16px; line-height: 1.05;">${friend.nickname}</div>
-                        <div class="ins-chat-sign" style="font-size: 13px; color: #8e8e93; display: flex; align-items: center; gap: 4px; margin-top: 0; line-height: 1;">online</div>
+                        <div class="ins-chat-sign" style="font-size: 13px; color: #8e8e93; display: flex; align-items: center; gap: 4px; margin-top: 0; line-height: 1;"><div style="width:6px;height:6px;border-radius:50%;background:${statusColor}; flex-shrink:0;"></div><span>${statusLabel}</span></div>
                    </div>`;
             }
 
@@ -894,7 +898,17 @@ function closeContextMenu() {
         }
         
         const thought = groupProfile.thought || '暂无心声';
-        const status = groupProfile.status || 'online';
+        
+        // For group members, we check if they have individual sleeping schedules if we can retrieve them
+        let isSleeping = false;
+        const members = window.imChat.getGroupMemberFriends(group);
+        const actualMember = members.find(m => String(m.id) === String(speakerInfo.id));
+        if (actualMember) {
+            isSleeping = window.imApp.isCharacterSleeping(actualMember);
+        }
+        
+        const status = isSleeping ? 'offline' : (groupProfile.status || 'online');
+        const statusColor = isSleeping ? '#8e8e93' : '#34c759';
 
         let titleHtml = title ? `<div class="gmp-title">${title}</div>` : '';
 
@@ -902,7 +916,7 @@ function closeContextMenu() {
             <div class="gmp-header">
                 <div class="gmp-avatar-wrapper">
                     <div class="gmp-avatar"><img src="${avatarUrl}"></div>
-                    <div class="gmp-status-bubble" contenteditable="true" spellcheck="false">${status}</div>
+                    <div class="gmp-status-bubble" contenteditable="${isSleeping ? 'false' : 'true'}" spellcheck="false">${status}</div>
                 </div>
             </div>
             <div class="gmp-body">

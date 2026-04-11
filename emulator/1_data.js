@@ -20,7 +20,17 @@ let detailTempId = null;
 const APP_NAME = 'iison';
 const APP_VERSION = '2.0.0';
 const STORAGE_SCHEMA_VERSION = 3;
-const DEFAULT_API_CONFIG = { endpoint: '', apiKey: '', model: '', temperature: 0.7 };
+const DEFAULT_API_CONFIG = { 
+    endpoint: '', 
+    apiKey: '', 
+    model: '', 
+    temperature: 0.7,
+    enableSubApi: false,
+    subEndpoint: '',
+    subApiKey: '',
+    subModel: '',
+    subTemperature: 0.7
+};
 let apiConfig = { ...DEFAULT_API_CONFIG };
 let apiPresets = [];
 let fetchedModels = [];
@@ -406,7 +416,14 @@ function normalizeApiConfig(config = {}) {
         model: config && typeof config.model === 'string' ? config.model : '',
         temperature: Number.isFinite(parseFloat(config && config.temperature))
             ? parseFloat(config.temperature)
-            : DEFAULT_API_CONFIG.temperature
+            : DEFAULT_API_CONFIG.temperature,
+        enableSubApi: config && typeof config.enableSubApi === 'boolean' ? config.enableSubApi : false,
+        subEndpoint: config && typeof config.subEndpoint === 'string' ? config.subEndpoint : '',
+        subApiKey: config && typeof config.subApiKey === 'string' ? config.subApiKey : '',
+        subModel: config && typeof config.subModel === 'string' ? config.subModel : '',
+        subTemperature: Number.isFinite(parseFloat(config && config.subTemperature))
+            ? parseFloat(config.subTemperature)
+            : DEFAULT_API_CONFIG.subTemperature
     };
 }
 

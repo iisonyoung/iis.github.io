@@ -69,6 +69,12 @@ const UI = {
         apiTemp: document.getElementById('api-temp-input'),
         apiModel: document.getElementById('api-model-input'),
         presetName: document.getElementById('preset-name-input'),
+        apiEnableSubToggle: document.getElementById('api-enable-sub-toggle'),
+        apiTabMain: document.getElementById('api-tab-main'),
+        apiTabSub: document.getElementById('api-tab-sub'),
+        mainApiControls: document.getElementById('main-api-controls'),
+        subApiControls: document.getElementById('sub-api-controls'),
+        modelSearchInput: document.getElementById('model-search-input'),
         
         themeBgUrl: document.getElementById('theme-bg-url-input'),
         themeAppList: document.getElementById('theme-app-list')

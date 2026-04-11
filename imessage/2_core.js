@@ -35,14 +35,47 @@ window.imApp.createDefaultMemory = function() {
         overview: '',
         anniversaries: '',
         context: { enabled: true, limit: 80, notes: '' },
-        summary: { enabled: false, limit: 80, prompt: '请按严格的时间线格式总结这段时间的近期事件。\n【格式要求】：必须是：\n[YYYY年MM月DD日 HH:MM] 总结内容\n[YYYY年MM月DD日 HH:MM] 总结内容\n\n【内容要求】：\n1. 必须以第三人称客观概括这段时间内双方发生了什么事。\n2. 必须精确包含角色和用户分别说了什么、做了什么、得出了什么结论或有何情绪。\n3. 使用最精简的语句，禁止啰嗦，但绝不允许遗漏或省略任何一件发生过的事情。' },
+        summary: { enabled: false, limit: 80, prompt: '' },
         longTerm: '',
-        longTermEntries: [],
-        lastSummaryMessageCount: 0,
         cherished: '',
+        longTermEntries: [],
         cherishedEntries: [],
-        relationships: []
+        relationships: [],
+        schedule: { enabled: false, sleepTime: '23:00', wakeTime: '07:00' }
     };
+};
+
+window.imApp.isCharacterSleeping = function(friend) {
+    if (!friend || !friend.memory || !friend.memory.schedule || !friend.memory.schedule.enabled) {
+        return false;
+    }
+    
+    const schedule = friend.memory.schedule;
+    const sleepTime = schedule.sleepTime || '23:00';
+    const wakeTime = schedule.wakeTime || '07:00';
+    
+    if (sleepTime === wakeTime) return false;
+
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTotalMinutes = currentHours * 60 + currentMinutes;
+
+    const parseTime = (timeStr) => {
+        const parts = timeStr.split(':');
+        return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    };
+
+    const sleepTotalMinutes = parseTime(sleepTime);
+    const wakeTotalMinutes = parseTime(wakeTime);
+
+    if (sleepTotalMinutes < wakeTotalMinutes) {
+        // Sleep and wake on the same day (e.g. 13:00 to 15:00)
+        return currentTotalMinutes >= sleepTotalMinutes && currentTotalMinutes < wakeTotalMinutes;
+    } else {
+        // Cross midnight (e.g. 23:00 to 07:00)
+        return currentTotalMinutes >= sleepTotalMinutes || currentTotalMinutes < wakeTotalMinutes;
+    }
 };
 
 window.imApp.createDefaultProfilePanel = function(friend = {}) {
@@ -113,11 +146,16 @@ window.imApp.normalizeFriendData = function(friend) {
     normalized.memory = {
         overview: memory.overview || defaultMemory.overview,
         anniversaries: memory.anniversaries || defaultMemory.anniversaries,
+        schedule: {
+            enabled: typeof memory.schedule?.enabled === 'boolean' ? memory.schedule.enabled : defaultMemory.schedule.enabled,
+            sleepTime: memory.schedule?.sleepTime || defaultMemory.schedule.sleepTime,
+            wakeTime: memory.schedule?.wakeTime || defaultMemory.schedule.wakeTime
+        },
         context: {
             enabled: typeof memory.context?.enabled === 'boolean' ? memory.context.enabled : defaultMemory.context.enabled,
             limit: Number(memory.context?.limit) > 0
                 ? Number(memory.context.limit)
-                : (isGroupChat ? 80 : defaultMemory.context.limit),
+                : (isGroupChat ? 100 : defaultMemory.context.limit),
             notes: memory.context?.notes || defaultMemory.context.notes
         },
         summary: {
@@ -157,7 +195,7 @@ window.imApp.normalizeFriendData = function(friend) {
 
 window.imApp.getContextLimit = function(friend) {
     const normalizedFriend = window.imApp.normalizeFriendData(friend || {});
-    const defaultContextLimit = normalizedFriend.type === 'group' ? 80 : 80;
+    const defaultContextLimit = normalizedFriend.type === 'group' ? 100 : 100;
 
     if (normalizedFriend.memory?.context?.enabled === false) {
         return 0;
@@ -2215,6 +2253,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.imApp.syncMomentsUser) window.imApp.syncMomentsUser();
             // Render friends to ensure up to date
             if (window.imApp.renderFriendsList) window.imApp.renderFriendsList();
+            if (window.imApp.renderGroupsList) window.imApp.renderGroupsList();
         });
     }
 
@@ -2813,6 +2852,7 @@ document.addEventListener('DOMContentLoaded', () => {
             navHomeBtn.classList.add('active');
             updateLineNavIndicator(navHomeBtn);
             if (window.imApp.renderFriendsList) window.imApp.renderFriendsList();
+            if (window.imApp.renderGroupsList) window.imApp.renderGroupsList();
         });
     }
 

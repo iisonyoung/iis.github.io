@@ -1,22 +1,118 @@
 // ==========================================
 // 7. API CONFIGURATION
 // ==========================================
+
+// 用于保存正在编辑的状态，避免未点保存就污染全局配置
+let tempApiConfig = { main: {}, sub: {} };
+// 当前正处于哪个 Tab: 'main' 或 'sub'
+let currentApiTab = 'main';
+
+// 切换 Tab 时更新视图和缓存
+function switchApiTab(tabName) {
+    // 切换前，保存当前输入框的值到对应的缓存对象中
+    if (currentApiTab === 'main') {
+        tempApiConfig.main.endpoint = UI.inputs.apiEndpoint.value;
+        tempApiConfig.main.apiKey = UI.inputs.apiKey.value;
+        tempApiConfig.main.model = UI.inputs.apiModel.value;
+        tempApiConfig.main.temperature = parseFloat(UI.inputs.apiTemp.value) || 0.7;
+    } else {
+        tempApiConfig.sub.endpoint = UI.inputs.apiEndpoint.value;
+        tempApiConfig.sub.apiKey = UI.inputs.apiKey.value;
+        tempApiConfig.sub.model = UI.inputs.apiModel.value;
+        tempApiConfig.sub.temperature = parseFloat(UI.inputs.apiTemp.value) || 0.7;
+    }
+
+    currentApiTab = tabName;
+
+    // 重新渲染UI
+    if (tabName === 'main') {
+        UI.inputs.apiTabMain.classList.add('active');
+        UI.inputs.apiTabSub.classList.remove('active');
+        
+        UI.inputs.mainApiControls.style.display = 'block';
+        UI.inputs.subApiControls.style.display = 'none';
+
+        UI.inputs.apiEndpoint.value = tempApiConfig.main.endpoint || '';
+        UI.inputs.apiKey.value = tempApiConfig.main.apiKey || '';
+        UI.inputs.apiModel.value = tempApiConfig.main.model || '';
+        UI.inputs.apiTemp.value = tempApiConfig.main.temperature ?? 0.7;
+    } else {
+        UI.inputs.apiTabMain.classList.remove('active');
+        UI.inputs.apiTabSub.classList.add('active');
+
+        UI.inputs.mainApiControls.style.display = 'none';
+        UI.inputs.subApiControls.style.display = 'block';
+
+        UI.inputs.apiEndpoint.value = tempApiConfig.sub.endpoint || '';
+        UI.inputs.apiKey.value = tempApiConfig.sub.apiKey || '';
+        UI.inputs.apiModel.value = tempApiConfig.sub.model || '';
+        UI.inputs.apiTemp.value = tempApiConfig.sub.temperature ?? 0.7;
+    }
+}
+
+if (UI.inputs.apiTabMain) {
+    UI.inputs.apiTabMain.addEventListener('click', () => switchApiTab('main'));
+}
+if (UI.inputs.apiTabSub) {
+    UI.inputs.apiTabSub.addEventListener('click', () => switchApiTab('sub'));
+}
+
 // Open API Settings
 document.getElementById('api-config-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    UI.inputs.apiEndpoint.value = apiConfig.endpoint;
-    UI.inputs.apiKey.value = apiConfig.apiKey;
-    UI.inputs.apiModel.value = apiConfig.model;
-    UI.inputs.apiTemp.value = apiConfig.temperature;
+    
+    // 初始化临时状态
+    tempApiConfig.main = {
+        endpoint: apiConfig.endpoint || '',
+        apiKey: apiConfig.apiKey || '',
+        model: apiConfig.model || '',
+        temperature: apiConfig.temperature ?? 0.7
+    };
+    tempApiConfig.sub = {
+        endpoint: apiConfig.subEndpoint || '',
+        apiKey: apiConfig.subApiKey || '',
+        model: apiConfig.subModel || '',
+        temperature: apiConfig.subTemperature ?? 0.7
+    };
+    
+    if (UI.inputs.apiEnableSubToggle) {
+        UI.inputs.apiEnableSubToggle.checked = !!apiConfig.enableSubApi;
+    }
+
+    currentApiTab = 'main';
+    switchApiTab('main'); // 强制刷新为主面板
+
     openView(UI.overlays.apiConfig);
 });
 
 // Confirm API Settings
 document.getElementById('confirm-api-btn').addEventListener('click', () => {
-    apiConfig.endpoint = UI.inputs.apiEndpoint.value;
-    apiConfig.apiKey = UI.inputs.apiKey.value;
-    apiConfig.model = UI.inputs.apiModel.value;
-    apiConfig.temperature = parseFloat(UI.inputs.apiTemp.value) || 0.7;
+    // 触发一次切换保存最新输入
+    if (currentApiTab === 'main') {
+        tempApiConfig.main.endpoint = UI.inputs.apiEndpoint.value;
+        tempApiConfig.main.apiKey = UI.inputs.apiKey.value;
+        tempApiConfig.main.model = UI.inputs.apiModel.value;
+        tempApiConfig.main.temperature = parseFloat(UI.inputs.apiTemp.value) || 0.7;
+    } else {
+        tempApiConfig.sub.endpoint = UI.inputs.apiEndpoint.value;
+        tempApiConfig.sub.apiKey = UI.inputs.apiKey.value;
+        tempApiConfig.sub.model = UI.inputs.apiModel.value;
+        tempApiConfig.sub.temperature = parseFloat(UI.inputs.apiTemp.value) || 0.7;
+    }
+
+    apiConfig.endpoint = tempApiConfig.main.endpoint;
+    apiConfig.apiKey = tempApiConfig.main.apiKey;
+    apiConfig.model = tempApiConfig.main.model;
+    apiConfig.temperature = tempApiConfig.main.temperature;
+
+    apiConfig.subEndpoint = tempApiConfig.sub.endpoint;
+    apiConfig.subApiKey = tempApiConfig.sub.apiKey;
+    apiConfig.subModel = tempApiConfig.sub.model;
+    apiConfig.subTemperature = tempApiConfig.sub.temperature;
+    
+    if (UI.inputs.apiEnableSubToggle) {
+        apiConfig.enableSubApi = UI.inputs.apiEnableSubToggle.checked;
+    }
     
     // Save globally
     window.apiConfig = apiConfig;
@@ -60,8 +156,15 @@ if (btnApiFetch) {
             const data = await res.json();
             
             if (data && data.data && Array.isArray(data.data)) {
-                fetchedModels = data.data.map(m => m.id);
-                saveGlobalData();
+                // 根据当前操作的 Tab 保存对应的模型列表
+                if (currentApiTab === 'main') {
+                    fetchedModels = data.data.map(m => m.id);
+                    saveGlobalData(); // fetchedModels 依然保存在全局
+                } else {
+                    // 如果需要针对副API区分列表可以另建变量，这里暂且复用全局 fetchedModels
+                    fetchedModels = data.data.map(m => m.id);
+                    saveGlobalData();
+                }
                 showToast(`Fetched ${fetchedModels.length} models!`);
             } else {
                 throw new Error('Invalid format');
@@ -112,8 +215,11 @@ if (confirmSavePresetBtn) {
 
 if (loadPresetBtn) {
     loadPresetBtn.addEventListener('click', () => {
-        renderPresetList();
         openView(UI.overlays.loadPreset);
+        // Delay render to allow open animation to play smoothly
+        setTimeout(() => {
+            renderPresetList();
+        }, 150);
     });
 }
 
@@ -129,6 +235,8 @@ function renderPresetList() {
         `;
         return;
     }
+
+    const fragment = document.createDocumentFragment();
 
     apiPresets.forEach(preset => {
         const item = document.createElement('div');
@@ -173,21 +281,50 @@ function renderPresetList() {
             });
         }
 
-        UI.lists.presets.appendChild(item);
+        fragment.appendChild(item);
     });
+
+    UI.lists.presets.appendChild(fragment);
 }
 
 // -- Model Picker --
+let cachedModelElements = []; // 用于搜索过滤的内存 DOM 缓存
+
 if (UI.inputs.apiModel) {
     UI.inputs.apiModel.addEventListener('click', () => {
-        renderModelList();
+        if (UI.inputs.modelSearchInput) UI.inputs.modelSearchInput.value = '';
         openView(UI.overlays.modelPicker);
+        // Delay render to allow open animation to play smoothly
+        setTimeout(() => {
+            renderModelList();
+        }, 150);
+    });
+}
+
+if (document.getElementById('close-model-picker-btn')) {
+    document.getElementById('close-model-picker-btn').addEventListener('click', () => {
+        closeView(UI.overlays.modelPicker);
+    });
+}
+
+if (UI.inputs.modelSearchInput) {
+    UI.inputs.modelSearchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        cachedModelElements.forEach(item => {
+            const modelName = item.dataset.modelName || '';
+            if (modelName.includes(query)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
     });
 }
 
 function renderModelList() {
     if (!UI.lists.models) return;
     UI.lists.models.innerHTML = '';
+    cachedModelElements = [];
 
     if (!Array.isArray(fetchedModels) || fetchedModels.length === 0) {
         UI.lists.models.innerHTML = `
@@ -198,10 +335,13 @@ function renderModelList() {
         return;
     }
 
+    const fragment = document.createDocumentFragment();
+
     fetchedModels.forEach(model => {
         const item = document.createElement('div');
         item.className = 'api-model-card';
         item.style.cursor = 'pointer';
+        item.dataset.modelName = model.toLowerCase();
         item.innerHTML = `
             <div class="api-model-card-name">${model}</div>
             <div class="api-model-card-action">
@@ -212,8 +352,11 @@ function renderModelList() {
             UI.inputs.apiModel.value = model;
             closeView(UI.overlays.modelPicker);
         });
-        UI.lists.models.appendChild(item);
+        cachedModelElements.push(item);
+        fragment.appendChild(item);
     });
+
+    UI.lists.models.appendChild(fragment);
 }
 
 if (typeof window.scheduleViewportSync === 'function') {
@@ -868,6 +1011,49 @@ if (themeFontModal) {
 // ==========================================
 // 8. THEME CONFIGURATION
 // ==========================================
+
+// Fullscreen Toggle
+const fullscreenToggle = document.getElementById('theme-fullscreen-toggle');
+if (fullscreenToggle) {
+    // Init state
+    const savedFullscreen = localStorage.getItem('user_fullscreen_pref');
+    if (savedFullscreen === 'true') {
+        fullscreenToggle.checked = true;
+    }
+
+    fullscreenToggle.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        localStorage.setItem('user_fullscreen_pref', isChecked);
+        if (isChecked) {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error("Fullscreen API error:", err);
+                    fullscreenToggle.checked = false;
+                    localStorage.setItem('user_fullscreen_pref', 'false');
+                    if (window.showToast) window.showToast('无法进入全屏');
+                });
+            }
+        } else {
+            if (document.exitFullscreen && document.fullscreenElement) {
+                document.exitFullscreen().catch(err => console.error("Exit Fullscreen error:", err));
+            }
+        }
+    });
+}
+
+// Listen to native fullscreen changes (e.g. user presses ESC)
+document.addEventListener('fullscreenchange', () => {
+    if (fullscreenToggle) {
+        if (!document.fullscreenElement) {
+            fullscreenToggle.checked = false;
+            localStorage.setItem('user_fullscreen_pref', 'false');
+        } else {
+            fullscreenToggle.checked = true;
+            localStorage.setItem('user_fullscreen_pref', 'true');
+        }
+    }
+});
+
 // Open Theme Settings
 document.getElementById('theme-config-btn').addEventListener('click', (e) => {
     e.stopPropagation();

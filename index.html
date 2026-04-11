@@ -4662,16 +4662,16 @@
             <!-- Comment User Modal (Custom Popover) -->
             
 
-            <!-- Custom Action Sheet Modal (Bottom Up) -->
-            <div class="bottom-sheet-overlay detail-sheet-overlay" id="custom-modal-overlay" style="z-index: 9999;">
-                <div class="bottom-sheet">
-                    <div class="sheet-handle"></div>
-                    <div class="sheet-title" id="modal-title">提示</div>
+            <!-- Custom Action Sheet Modal (Centered Card) -->
+            <div class="bottom-sheet-overlay detail-sheet-overlay wb-centered-modal-overlay" id="custom-modal-overlay" style="z-index: 9999;">
+                <div class="wb-centered-modal-card wb-group-modal-card">
+                    <div class="wb-centered-modal-header">
+                        <div class="wb-centered-modal-title" id="modal-title">提示</div>
+                    </div>
                     
-                    <div class="detail-sheet-content" style="padding-bottom: 20px;">
-                        <p id="modal-message" style="text-align: center; margin-bottom: 20px; color: #8e8e93; font-size: 13px; padding: 0 20px; line-height: 1.4;"></p>
+                    <div class="wb-centered-modal-body">
+                        <p id="modal-message" style="text-align: center; margin-bottom: 20px; color: #8e8e93; font-size: 14px; padding: 0 20px; line-height: 1.5;"></p>
                         
-                        <!-- Changed to use the ID required by JS logic: modal-confirm-content & modal-prompt-content -->
                         <div id="modal-confirm-content">
                             <!-- JS will toggle this for non-prompt -->
                         </div>
@@ -4679,7 +4679,7 @@
                         <div id="modal-prompt-content" style="display: none;">
                             <div class="form-group fully-rounded" id="modal-input-group" style="margin-bottom: 20px;">
                                 <div class="form-item">
-                                    <input type="text" id="modal-input" style="text-align: left;" placeholder="请输入">
+                                    <input type="text" id="modal-input" style="text-align: center;" placeholder="请输入">
                                 </div>
                             </div>
                             <div class="form-group fully-rounded tall-input-group" id="modal-textarea-group" style="margin-bottom: 20px; display: none;">
@@ -4689,14 +4689,10 @@
                             </div>
                         </div>
 
-                        <div style="display: flex; gap: 10px; margin: 0 16px;">
-                            <div class="settings-group fully-rounded" style="flex: 1; margin: 0;">
-                                <div class="sheet-action" id="modal-cancel-btn" style="margin: 0; color: #8e8e93; font-weight: 500;">取消</div>
-                            </div>
-                            <div class="settings-group fully-rounded" style="flex: 1; margin: 0;">
-                                <div class="sheet-action" id="modal-confirm-btn" style="margin: 0; color: #ff3b30; font-weight: 600;">确定</div>
-                                <div class="sheet-action" id="modal-prompt-confirm-btn" style="margin: 0; color: #2c2c2e; font-weight: 600; display: none;">确定</div>
-                            </div>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="sheet-action" id="modal-cancel-btn" style="flex: 1; margin: 0; background: #e5e5ea; color: #000; font-weight: 500; font-size: 15px; padding: 12px; border-radius: 12px;">取消</div>
+                            <div class="sheet-action" id="modal-confirm-btn" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; font-weight: 600; font-size: 15px; padding: 12px; border-radius: 12px;">确定</div>
+                            <div class="sheet-action" id="modal-prompt-confirm-btn" style="flex: 1; margin: 0; background: #007aff; color: #fff; font-weight: 600; font-size: 15px; padding: 12px; border-radius: 12px; display: none;">确定</div>
                         </div>
                     </div>
                 </div>
@@ -4704,15 +4700,15 @@
             
             <!-- Create Group Bottom Sheet -->
             <div class="bottom-sheet-overlay detail-sheet-overlay" id="create-group-sheet">
-                <div class="bottom-sheet" style="height: 90%;">
+                <div class="bottom-sheet" style="height: 90%; display: flex; flex-direction: column; background: #f2f2f7;">
                     <div class="sheet-handle"></div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px 10px;">
-                        <div id="cancel-create-group-btn" style="color: #007aff; font-size: 17px; cursor: pointer;">Cancel</div>
-                        <div class="sheet-title" style="margin-bottom: 0; padding-bottom: 0;">New Group</div>
-                        <div id="confirm-create-group-btn" style="color: #007aff; font-size: 17px; font-weight: 600; cursor: pointer; opacity: 0.5; pointer-events: none;">Create</div>
+                    <div class="sheet-title" style="position: relative;">
+                        <div id="cancel-create-group-btn" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #007aff; font-size: 17px; font-weight: normal; cursor: pointer;">Cancel</div>
+                        New Group
+                        <div id="confirm-create-group-btn" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #007aff; font-size: 17px; font-weight: 600; cursor: pointer; opacity: 0.5; pointer-events: none;">Create</div>
                     </div>
                     
-                    <div class="detail-sheet-content" style="flex: 1; overflow-y: auto; padding: 0; background: #f2f2f7;">
+                    <div class="detail-sheet-content" style="flex: 1; overflow-y: auto; padding: 0; background: #f2f2f7; padding-bottom: max(40px, env(safe-area-inset-bottom));">
                         <div style="background: #fff; margin: 20px 16px 0; padding: 15px 16px; display: flex; align-items: center; gap: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
                             <!-- Group Avatar -->
                             <div class="edit-avatar-wrapper detail-avatar-wrapper" id="group-avatar-wrapper" style="margin: 0; width: 60px; height: 60px; flex-shrink: 0; cursor: pointer;">
@@ -4741,10 +4737,14 @@
             </div>
 
             <!-- Group Account Switch Bottom Sheet -->
-            <div class="bottom-sheet-overlay detail-sheet-overlay" id="group-account-switch-sheet" style="z-index: 600;">
-                <div class="bottom-sheet" style="height: 60%; display: flex; flex-direction: column; background: #f2f2f7;">
-                    <div class="sheet-handle"></div>
-                    <div class="sheet-title">选择群内身份</div>
+            <div class="bottom-sheet-overlay detail-sheet-overlay wb-centered-modal-overlay" id="group-account-switch-sheet" style="z-index: 600;">
+                <div class="wb-centered-modal-card wb-group-modal-card" style="height: 60%; display: flex; flex-direction: column; background: #f2f2f7;">
+                    <div class="wb-centered-modal-header" style="position: relative; flex-shrink: 0;">
+                        <div class="wb-centered-modal-title">选择群内身份</div>
+                        <div class="wb-centered-modal-close" style="position: absolute; right: 16px; top: 16px; font-size: 18px; color: #8e8e93; cursor: pointer;" onclick="window.closeView(document.getElementById('group-account-switch-sheet'))">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
                     <div style="font-size: 13px; color: #8e8e93; text-align: center; margin-bottom: 10px; padding: 0 16px;">
                     </div>
                     <div class="detail-sheet-content" style="flex: 1; overflow-y: auto; padding: 0 16px;">
@@ -4755,12 +4755,17 @@
                 </div>
             </div>
 
-            <!-- Group Member Manage Bottom Sheet -->
-            <div class="bottom-sheet-overlay detail-sheet-overlay" id="group-member-manage-sheet" style="z-index: 600;">
-                <div class="bottom-sheet" style="height: auto; padding-bottom: 30px;">
-                    <div class="sheet-handle"></div>
-                    <div class="sheet-title">管理群成员</div>
-                    <div class="detail-sheet-content" style="padding: 16px;">
+            <!-- Group Member Manage Modal (Centered) -->
+            <div class="bottom-sheet-overlay detail-sheet-overlay wb-centered-modal-overlay" id="group-member-manage-sheet" style="z-index: 600;">
+                <div class="wb-centered-modal-card wb-group-modal-card">
+                    <div class="wb-centered-modal-header" style="position: relative;">
+                        <div class="wb-centered-modal-title">管理群成员</div>
+                        <div class="wb-centered-modal-close" style="position: absolute; right: 16px; top: 16px; font-size: 18px; color: #8e8e93; cursor: pointer;" onclick="window.closeView(document.getElementById('group-member-manage-sheet'))">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="wb-centered-modal-body" style="padding-top: 0;">
                         <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px;">
                             <div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; background: #e5e5ea; display: flex; justify-content: center; align-items: center; font-size: 30px; color: #8e8e93; margin-bottom: 10px;">
                                 <img src="" id="gmm-avatar" style="width: 100%; height: 100%; object-fit: cover; display: none;">
@@ -4770,9 +4775,15 @@
                         </div>
                         
                         <div class="settings-group fully-rounded" style="margin: 0;">
-                            <div class="settings-item" id="gmm-memory-btn" style="border-bottom: 1px solid var(--separator-color); cursor: pointer;">
-                                <div class="settings-icon" style="background-color: #5856d6;"><i class="fas fa-brain"></i></div>
-                                <div class="settings-text">群聊记忆</div>
+                            <div class="form-item" style="justify-content: space-between; border-bottom: 1px solid var(--separator-color); cursor: default;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div class="settings-icon" style="background-color: #5856d6;"><i class="fas fa-brain"></i></div>
+                                    <div class="settings-text">挂载单聊记忆</div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="gmm-memory-toggle">
+                                    <span class="slider"></span>
+                                </label>
                             </div>
                             <div class="settings-item" id="gmm-admin-btn" style="border-bottom: 1px solid var(--separator-color); cursor: pointer;">
                                 <div class="settings-icon" style="background-color: #007aff;"><i class="fas fa-user-shield"></i></div>
@@ -4793,9 +4804,9 @@
 
             <!-- Group Details Bottom Sheet (P2 Style) -->
             <div class="bottom-sheet-overlay detail-sheet-overlay" id="group-details-sheet" style="z-index: 500;">
-                <div class="bottom-sheet" style="height: 85%; display: flex; flex-direction: column; background: #f2f2f7; overflow: hidden;">
-                    <div class="sheet-handle" style="flex-shrink: 0;"></div>
-                    <div class="sheet-title" style="flex-shrink: 0;">Group Details</div>
+                <div class="bottom-sheet" style="height: 85%; display: flex; flex-direction: column; background: #f2f2f7;">
+                    <div class="sheet-handle"></div>
+                    <div class="sheet-title">Group Details</div>
 
                     <div class="detail-sheet-content" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px; display: block; -webkit-overflow-scrolling: touch; padding-bottom: max(40px, env(safe-area-inset-bottom));">
                         <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
@@ -4855,10 +4866,14 @@
             </div>
 
             <!-- Group More Bottom Sheet -->
-            <div class="bottom-sheet-overlay detail-sheet-overlay" id="group-more-sheet" style="z-index: 600;">
-                <div class="bottom-sheet" style="height: auto; padding-bottom: 30px;">
-                    <div class="sheet-handle"></div>
-                    <div class="sheet-title">More</div>
+            <div class="bottom-sheet-overlay detail-sheet-overlay wb-centered-modal-overlay" id="group-more-sheet" style="z-index: 600;">
+                <div class="wb-centered-modal-card wb-group-modal-card" style="height: auto; padding-bottom: 30px;">
+                    <div class="wb-centered-modal-header" style="position: relative;">
+                        <div class="wb-centered-modal-title">More</div>
+                        <div class="wb-centered-modal-close" style="position: absolute; right: 16px; top: 16px; font-size: 18px; color: #8e8e93; cursor: pointer;" onclick="window.closeView(document.getElementById('group-more-sheet'))">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
                     <div class="detail-sheet-content" style="padding: 16px;">
                         <div class="settings-group fully-rounded" style="margin: 0;">
                             <div class="settings-item" id="group-affairs-btn" style="border-bottom: 1px solid var(--separator-color); cursor: pointer;">
@@ -4875,10 +4890,14 @@
             </div>
 
             <!-- Group Edit Bottom Sheet -->
-            <div class="bottom-sheet-overlay detail-sheet-overlay" id="group-edit-sheet" style="z-index: 600;">
-                <div class="bottom-sheet" style="height: 85%; display: flex; flex-direction: column;">
-                    <div class="sheet-handle" style="flex-shrink: 0;"></div>
-                    <div class="sheet-title" style="flex-shrink: 0;">Edit Group</div>
+            <div class="bottom-sheet-overlay detail-sheet-overlay wb-centered-modal-overlay" id="group-edit-sheet" style="z-index: 600;">
+                <div class="wb-centered-modal-card wb-group-modal-card" style="height: 85%; display: flex; flex-direction: column;">
+                    <div class="wb-centered-modal-header" style="position: relative; flex-shrink: 0;">
+                        <div class="wb-centered-modal-title">Edit Group</div>
+                        <div class="wb-centered-modal-close" style="position: absolute; right: 16px; top: 16px; font-size: 18px; color: #8e8e93; cursor: pointer;" onclick="window.closeView(document.getElementById('group-edit-sheet'))">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
                     <div class="detail-sheet-content" style="flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: max(20px, env(safe-area-inset-bottom));">
                         <div class="form-group fully-rounded">
                             <div class="form-item">
@@ -4905,10 +4924,14 @@
             </div>
 
             <!-- Group Context Settings Bottom Sheet -->
-            <div class="bottom-sheet-overlay detail-sheet-overlay" id="group-context-settings-sheet" style="z-index: 650;">
-                <div class="bottom-sheet" style="height: auto; max-height: 65%; display: flex; flex-direction: column;">
-                    <div class="sheet-handle" style="flex-shrink: 0;"></div>
-                    <div class="sheet-title" style="flex-shrink: 0;">管理群聊</div>
+            <div class="bottom-sheet-overlay detail-sheet-overlay wb-centered-modal-overlay" id="group-context-settings-sheet" style="z-index: 650;">
+                <div class="wb-centered-modal-card wb-group-modal-card" style="height: auto; max-height: 85%; display: flex; flex-direction: column;">
+                    <div class="wb-centered-modal-header" style="position: relative; flex-shrink: 0;">
+                        <div class="wb-centered-modal-title">管理群聊</div>
+                        <div class="wb-centered-modal-close" style="position: absolute; right: 16px; top: 16px; font-size: 18px; color: #8e8e93; cursor: pointer;" onclick="window.closeView(document.getElementById('group-context-settings-sheet'))">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
                     <div class="detail-sheet-content" style="flex: 1; overflow-y: auto; padding-bottom: max(20px, env(safe-area-inset-bottom));">
                         
                         <!-- 群公告、置顶群聊、群头衔与群bot -->
@@ -4951,7 +4974,7 @@
                             <div class="form-item" style="justify-content: space-between; border-bottom: 1px solid var(--separator-color);">
                                 <label style="width: auto; font-size: 17px; color: #000; padding-left: 0;">上下文</label>
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <input type="number" id="group-context-limit-input" style="width: 56px; text-align: center; border: 1px solid #e5e5ea; border-radius: 8px; padding: 4px; font-size: 15px;" value="50" min="1">
+                                    <input type="number" id="group-context-limit-input" style="width: 56px; text-align: center; border: 1px solid #e5e5ea; border-radius: 8px; padding: 4px; font-size: 15px;" value="80" min="1">
                                     <label class="toggle-switch">
                                         <input type="checkbox" id="group-context-enabled-toggle" checked>
                                         <span class="slider"></span>
@@ -4963,7 +4986,7 @@
                             <div class="form-item" style="justify-content: space-between; border-bottom: none; transition: border-radius 0.2s;" id="group-summary-header">
                                 <label style="width: auto; font-size: 17px; color: #000; padding-left: 0;">自动总结</label>
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <input type="number" id="group-summary-limit-input" style="width: 56px; text-align: center; border: 1px solid #e5e5ea; border-radius: 8px; padding: 4px; font-size: 15px;" value="50" min="1">
+                                    <input type="number" id="group-summary-limit-input" style="width: 56px; text-align: center; border: 1px solid #e5e5ea; border-radius: 8px; padding: 4px; font-size: 15px;" value="80" min="1">
                                     <label class="toggle-switch">
                                         <input type="checkbox" id="group-summary-enabled-toggle">
                                         <span class="slider"></span>
@@ -4998,10 +5021,14 @@
             </div>
 
             <!-- Add Group Member Sheet -->
-            <div class="bottom-sheet-overlay detail-sheet-overlay" id="group-add-member-sheet" style="z-index: 550;">
-                <div class="bottom-sheet" style="height: 80%; display: flex; flex-direction: column;">
-                    <div class="sheet-handle"></div>
-                    <div class="sheet-title">添加群成员</div>
+            <div class="bottom-sheet-overlay detail-sheet-overlay wb-centered-modal-overlay" id="group-add-member-sheet" style="z-index: 550;">
+                <div class="wb-centered-modal-card wb-group-modal-card" style="height: 80%; display: flex; flex-direction: column;">
+                    <div class="wb-centered-modal-header" style="position: relative; flex-shrink: 0;">
+                        <div class="wb-centered-modal-title">添加群成员</div>
+                        <div class="wb-centered-modal-close" style="position: absolute; right: 16px; top: 16px; font-size: 18px; color: #8e8e93; cursor: pointer;" onclick="window.closeView(document.getElementById('group-add-member-sheet'))">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
                     <div class="detail-sheet-content" style="flex: 1; overflow-y: auto; padding: 0 16px;">
                         <div id="group-add-member-list" style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;">
                             <!-- Members injected via JS -->
@@ -5292,7 +5319,7 @@
                                 <div class="form-item" style="justify-content: space-between; border-bottom: 1px solid var(--separator-color);">
                                     <label style="width: auto; font-size: 17px; color: #000; padding-left: 0;">上下文</label>
                                     <div style="display: flex; align-items: center; gap: 10px;">
-                                        <input type="number" id="chat-memory-context-limit-input" style="width: 50px; text-align: center; border: 1px solid #e5e5ea; border-radius: 8px; padding: 4px; font-size: 15px;" value="30">
+                                        <input type="number" id="chat-memory-context-limit-input" style="width: 50px; text-align: center; border: 1px solid #e5e5ea; border-radius: 8px; padding: 4px; font-size: 15px;" value="80">
                                         <label class="toggle-switch">
                                             <input type="checkbox" id="chat-memory-context-enabled-toggle" checked>
                                             <span class="slider"></span>
@@ -5304,7 +5331,7 @@
                                 <div class="form-item" style="justify-content: space-between; border-bottom: none; transition: border-radius 0.2s;" id="summary-header">
                                     <label style="width: auto; font-size: 17px; color: #000; padding-left: 0;">自动总结</label>
                                     <div style="display: flex; align-items: center; gap: 10px;">
-                                        <input type="number" id="chat-memory-summary-limit-input" style="width: 50px; text-align: center; border: 1px solid #e5e5ea; border-radius: 8px; padding: 4px; font-size: 15px;" value="50">
+                                        <input type="number" id="chat-memory-summary-limit-input" style="width: 50px; text-align: center; border: 1px solid #e5e5ea; border-radius: 8px; padding: 4px; font-size: 15px;" value="80">
                                         <label class="toggle-switch">
                                             <input type="checkbox" id="chat-memory-summary-enabled-toggle">
                                             <span class="slider"></span>
@@ -5316,6 +5343,30 @@
                                     <textarea id="chat-memory-summary-prompt-input" class="tall-input" style="height: 120px; background: #f2f2f7; border-radius: 10px; padding: 12px; font-size: 14px; width: 100%; box-sizing: border-box; border: none; outline: none; resize: none;" placeholder="输入自动总结提示词..."></textarea>
                                 </div>
                             </div>
+
+                            <div class="settings-group fully-rounded" style="margin: 10px 16px; overflow: visible;">
+                                <div class="form-item" style="justify-content: space-between; border-bottom: none; transition: border-radius 0.2s;" id="schedule-header">
+                                    <label style="width: auto; font-size: 17px; color: #000; padding-left: 0;">启用作息时间</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="chat-memory-schedule-enabled-toggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div id="chat-memory-schedule-details" style="display: none; flex-direction: column; background: #fff; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;">
+                                    <div class="form-item" style="justify-content: space-between; border-top: 1px solid var(--separator-color); border-bottom: 1px solid var(--separator-color);">
+                                        <label style="width: auto; font-size: 17px; color: #000; padding-left: 0;">睡觉时间</label>
+                                        <input type="time" id="chat-memory-schedule-sleep-input" style="border: none; text-align: right; outline: none; background: transparent; font-size: 17px; color: #007aff;">
+                                    </div>
+                                    <div class="form-item" style="justify-content: space-between; border-bottom: none;">
+                                        <label style="width: auto; font-size: 17px; color: #000; padding-left: 0;">醒来时间</label>
+                                        <input type="time" id="chat-memory-schedule-wake-input" style="border: none; text-align: right; outline: none; background: transparent; font-size: 17px; color: #007aff;">
+                                    </div>
+                                    <div style="font-size: 13px; color: #8e8e93; line-height: 1.6; padding: 10px 16px; border-top: 1px solid var(--separator-color);">
+                                        开启后，在睡觉时间段内，角色会自动显示为离线状态，并在回复时带有自动回复标记。
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -5460,9 +5511,37 @@
             <div class="bottom-sheet-overlay detail-sheet-overlay" id="api-config-sheet" style="z-index: 500;">
                 <div class="bottom-sheet" style="max-height: 85%;">
                     <div class="sheet-handle"></div>
-                    <div class="sheet-title">API 配置</div>
                     
+                    <!-- 双Tab切换 -->
+                    <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+                        <div class="pay-segment-control" style="background: #e5e5ea; padding: 2px; border-radius: 8px;">
+                            <div class="pay-segment-btn active" id="api-tab-main" style="padding: 6px 20px; font-size: 14px;">主 API</div>
+                            <div class="pay-segment-btn" id="api-tab-sub" style="padding: 6px 20px; font-size: 14px;">副 API</div>
+                        </div>
+                    </div>
+
                     <div class="detail-sheet-content" style="padding-bottom: 20px;">
+                        <!-- 副API专属：启用开关及场景预留 -->
+                        <div id="sub-api-controls" style="display: none;">
+                            <div class="form-group fully-rounded" style="margin-bottom: 20px;">
+                                <div class="form-item" style="justify-content: space-between; border-bottom: 1px solid var(--separator-color);">
+                                    <label style="width: auto; font-size: 17px; color: #000;">启用副 API</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="api-enable-sub-toggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="form-item" style="justify-content: space-between; border-bottom: none; cursor: pointer;">
+                                    <label style="width: auto; font-size: 17px; color: #000;">应用场景</label>
+                                    <div style="display: flex; align-items: center; color: #8e8e93; font-size: 15px;">
+                                        <span id="sub-api-scenario">全部</span>
+                                        <i class="fas fa-chevron-right arrow" style="margin-left: 8px;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 注释：此处“应用场景”预留为后续可选择如“生成图片/少量文本时使用”的入口 -->
+                        </div>
+
                         <div class="form-group fully-rounded" style="margin-bottom: 20px;">
                             <div class="form-item">
                                 <label style="width: 100px; white-space: nowrap;">接口地址</label>
@@ -5507,23 +5586,25 @@
                             </div>
                         </div>
 
-                        <!-- Stream & Background Activity Group -->
-                        <div class="form-group fully-rounded" style="margin-bottom: 20px;">
-                            <div class="form-item" style="justify-content: space-between;">
-                                <label style="width: auto; white-space: nowrap; flex: 1; margin-right: 10px; color: #000; font-size: 16px;">流式传输</label>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="stream-response-toggle">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="form-item" style="justify-content: space-between; border-bottom: none;">
-                                <label style="width: auto; white-space: nowrap; flex: 1; margin-right: 10px; color: #000; font-size: 16px;">后台独立活动</label>
-                                <div style="display: flex; align-items: center; justify-content: flex-end;">
-                                    <input type="number" id="bg-activity-interval" class="small-rounded-input" value="60" min="1" style="width: 50px; margin-right: 10px; text-align: center;">
+                        <!-- Stream & Background Activity Group (仅在主API显示) -->
+                        <div id="main-api-controls">
+                            <div class="form-group fully-rounded" style="margin-bottom: 20px;">
+                                <div class="form-item" style="justify-content: space-between;">
+                                    <label style="width: auto; white-space: nowrap; flex: 1; margin-right: 10px; color: #000; font-size: 16px;">流式传输</label>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" id="bg-activity-toggle">
+                                        <input type="checkbox" id="stream-response-toggle">
                                         <span class="slider"></span>
                                     </label>
+                                </div>
+                                <div class="form-item" style="justify-content: space-between; border-bottom: none;">
+                                    <label style="width: auto; white-space: nowrap; flex: 1; margin-right: 10px; color: #000; font-size: 16px;">后台独立活动</label>
+                                    <div style="display: flex; align-items: center; justify-content: flex-end;">
+                                        <input type="number" id="bg-activity-interval" class="small-rounded-input" value="60" min="1" style="width: 50px; margin-right: 10px; text-align: center;">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="bg-activity-toggle">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -5535,13 +5616,21 @@
 
             <!-- Model Picker Sheet (Layered on top of API sheet) -->
             <div class="bottom-sheet-overlay detail-sheet-overlay" id="model-picker-sheet" style="z-index: 550;">
-                <div class="bottom-sheet" style="max-height: 80%; display: flex; flex-direction: column;">
-                    <div class="sheet-handle"></div>
-                    <div class="sheet-title">选择模型</div>
-                    <div class="account-list no-drag-scroll" id="model-list" style="margin: 20px 16px; flex: 1; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;">
+                <!-- 卡片样式弹窗 -->
+                <div class="wb-centered-modal-card" style="width: min(100% - 32px, 420px); max-height: 80vh; background: #f2f2f7; border-radius: 20px; margin: auto;">
+                    <div style="padding: 16px 16px 10px; background: #f2f2f7; border-top-left-radius: 20px; border-top-right-radius: 20px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-size: 18px; font-weight: 700;">选择模型</div>
+                            <i class="fas fa-times" id="close-model-picker-btn" style="color: #8e8e93; font-size: 18px; cursor: pointer; padding: 4px;"></i>
+                        </div>
+                        <div class="x-search-bar" style="border-radius: 12px; background: #e5e5ea; padding: 8px 12px; border: none; margin: 0;">
+                            <i class="fas fa-search" style="color: #8e8e93; font-size: 14px;"></i>
+                            <input type="text" id="model-search-input" placeholder="搜索模型..." style="background: transparent; flex: 1; border: none; outline: none; margin-left: 8px; font-size: 15px;">
+                        </div>
+                    </div>
+                    <div class="account-list no-drag-scroll" id="model-list" style="margin: 0 16px 16px; flex: 1; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; border-radius: 16px;">
                         <!-- Models injected here -->
                     </div>
-                    <div class="sheet-action" id="close-model-picker-btn" style="margin: 0 16px 20px; flex-shrink: 0; background-color: #f2f2f7; color: #000;">取消</div>
                 </div>
             </div>
 
@@ -5663,6 +5752,17 @@
                     <div class="sheet-title">主题美化</div>
                     
                     <div class="detail-sheet-content" style="padding-bottom: 30px; overflow-y: auto; flex: 1;">
+                        <!-- Fullscreen Toggle -->
+                        <div class="settings-group fully-rounded" style="margin: 0 16px 20px;">
+                            <div class="form-item" style="justify-content: space-between; border-bottom: none; border-radius: 20px;">
+                                <label style="width: auto; font-size: 16px; color: #000; font-weight: 600; padding-left: 10px;">全屏模式</label>
+                                <label class="toggle-switch" style="margin-right: 10px;">
+                                    <input type="checkbox" id="theme-fullscreen-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
                         <!-- Background Customization -->
                         <div class="settings-group fully-rounded" style="margin: 0 16px 20px;">
                             <div class="settings-item" style="cursor: default; border-bottom: 1px solid var(--separator-color);">

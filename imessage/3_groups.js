@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
             : true;
         const limit = Number(currentViewingGroup.memory.context.limit) > 0
             ? Number(currentViewingGroup.memory.context.limit)
-            : 80;
+            : 100;
 
         if (groupContextEnabledToggle) {
             groupContextEnabledToggle.checked = enabled;
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const summaryEnabled = !!currentViewingGroup.memory.summary.enabled;
         const summaryLimit = Number(currentViewingGroup.memory.summary.limit) > 0
             ? Number(currentViewingGroup.memory.summary.limit)
-            : 80;
+            : 100;
         const summaryPrompt = currentViewingGroup.memory.summary.prompt || '';
 
         if (groupSummaryEnabledToggle) {
@@ -524,6 +524,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.getElementById('gmm-name').textContent = targetMember.nickname || 'Member';
+        
+        // 单聊记忆开关逻辑
+        const memoryToggle = document.getElementById('gmm-memory-toggle');
+        if (memoryToggle) {
+            if (memberId === '__group_bot__') {
+                memoryToggle.disabled = true;
+                memoryToggle.checked = false;
+            } else {
+                memoryToggle.disabled = false;
+                // 从当前群聊记忆中读取该成员是否开启了挂载单聊记忆
+                const groupMemory = group.memory || {};
+                const mountSettings = groupMemory.mountSettings || {};
+                memoryToggle.checked = !!mountSettings[memberId];
+                
+                // 绑定一次性事件以更新设置（先移除旧的以防重复绑定）
+                memoryToggle.onchange = async (e) => {
+                    const isChecked = e.target.checked;
+                    await commitCurrentGroupChange((targetGroup) => {
+                        targetGroup.memory = targetGroup.memory || {};
+                        targetGroup.memory.mountSettings = targetGroup.memory.mountSettings || {};
+                        targetGroup.memory.mountSettings[memberId] = isChecked;
+                    }, { silent: true });
+                };
+            }
+        }
+
         window.openView(sheet);
     };
 
@@ -707,6 +733,96 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const clearGroupChatHistoryBtn = document.getElementById('clear-group-chat-history-btn');
+    if (clearGroupChatHistoryBtn) {
+        clearGroupChatHistoryBtn.addEventListener('click', async () => {
+            if (!currentViewingGroup) return;
+            window.showCustomModal({
+                title: '清空聊天记录',
+                message: `确定要清空群聊 "${currentViewingGroup.nickname}" 的聊天记录吗？此操作不可恢复。`,
+                confirmText: '清空',
+                isDestructive: true,
+                onConfirm: async () => {
+                    const success = await window.imApp.resetFriendMessages(currentViewingGroup.id);
+                    if (success) {
+                        if (window.showToast) window.showToast('聊天记录已清空');
+                        if (window.imApp.openChatTab) window.imApp.openChatTab(currentViewingGroup);
+                    }
+                }
+            });
+        });
+    }
+
+    const leaveGroupChatBtn = document.getElementById('leave-group-chat-btn');
+    if (leaveGroupChatBtn) {
+        leaveGroupChatBtn.addEventListener('click', async () => {
+            if (!currentViewingGroup) return;
+            window.showCustomModal({
+                title: '退出群聊',
+                message: `确定要退出群聊 "${currentViewingGroup.nickname}" 吗？`,
+                confirmText: '退出',
+                isDestructive: true,
+                onConfirm: async () => {
+                    await window.imApp.appendFriendMessage(currentViewingGroup.id, {
+                        id: `sys-${Date.now()}`,
+                        role: 'system',
+                        content: '你已退出群聊',
+                        timestamp: Date.now()
+                    });
+                    if (window.showToast) window.showToast('已退出群聊');
+                    window.closeView(document.getElementById('group-context-settings-sheet'));
+                    window.closeView(document.getElementById('group-details-sheet'));
+                    if (window.imData.currentActiveFriend && window.imData.currentActiveFriend.id === currentViewingGroup.id) {
+                        window.imData.currentActiveFriend = null;
+                        if (window.imChat && window.imChat.updateChatsView) {
+                            window.imChat.updateChatsView();
+                        }
+                    }
+                    if (window.imApp.openChatTab) window.imApp.openChatTab(currentViewingGroup);
+                }
+            });
+        });
+    }
+
+    const dismissGroupChatBtn = document.getElementById('dismiss-group-chat-btn');
+    if (dismissGroupChatBtn) {
+        dismissGroupChatBtn.addEventListener('click', async () => {
+            if (!currentViewingGroup) return;
+            window.showCustomModal({
+                title: '解散群聊',
+                message: `确定要解散群聊 "${currentViewingGroup.nickname}" 吗？所有相关数据将被删除且不可恢复。`,
+                confirmText: '解散',
+                isDestructive: true,
+                onConfirm: async () => {
+                    const saved = await window.imApp.commitFriendsChange(() => {
+                        window.imData.friends = window.imData.friends.filter(f => String(f.id) !== String(currentViewingGroup.id));
+                    }, { silent: true });
+                    
+                    if (saved) {
+                        if (window.imStorage && window.imStorage.deleteFriend) {
+                            await window.imStorage.deleteFriend(currentViewingGroup.id);
+                        }
+                        if (window.showToast) window.showToast('群聊已解散');
+                        window.closeView(document.getElementById('group-context-settings-sheet'));
+                        window.closeView(document.getElementById('group-details-sheet'));
+                        const chatInterface = document.getElementById(`chat-interface-${currentViewingGroup.id}`);
+                        if (chatInterface) {
+                            chatInterface.remove();
+                        }
+                        if (window.imData.currentActiveFriend && window.imData.currentActiveFriend.id === currentViewingGroup.id) {
+                            window.imData.currentActiveFriend = null;
+                            if (window.imChat && window.imChat.updateChatsView) {
+                                window.imChat.updateChatsView();
+                            }
+                        }
+                        currentViewingGroup = null;
+                        if (window.imApp.renderGroupsList) window.imApp.renderGroupsList();
+                    }
+                }
+            });
+        });
+    }
+
     if (confirmGroupEditBtn) {
         confirmGroupEditBtn.addEventListener('click', async () => {
             if (!currentViewingGroup) return;
@@ -749,10 +865,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!currentViewingGroup) return;
 
             const enabled = !!(groupContextEnabledToggle && groupContextEnabledToggle.checked);
-            let limit = groupContextLimitInput ? Number(groupContextLimitInput.value) : 80;
+            let limit = groupContextLimitInput ? Number(groupContextLimitInput.value) : 100;
 
             if (!Number.isFinite(limit) || limit <= 0) {
-                limit = 80;
+                limit = 100;
             }
 
             limit = Math.max(1, Math.floor(limit));
@@ -762,8 +878,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const sumEnabled = !!(groupSummaryEnabledToggle && groupSummaryEnabledToggle.checked);
-            let sumLimit = groupSummaryLimitInput ? Number(groupSummaryLimitInput.value) : 80;
-            if (!Number.isFinite(sumLimit) || sumLimit <= 0) sumLimit = 80;
+            let sumLimit = groupSummaryLimitInput ? Number(groupSummaryLimitInput.value) : 100;
+            if (!Number.isFinite(sumLimit) || sumLimit <= 0) sumLimit = 100;
             sumLimit = Math.max(1, Math.floor(sumLimit));
             const sumPrompt = groupSummaryPromptInput ? groupSummaryPromptInput.value.trim() : '';
 

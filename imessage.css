@@ -694,15 +694,7 @@
     gap: 4px;
 }
 
-/* Specific styling for the green online dot next to '在线' */
-.ins-chat-sign::before {
-    content: '';
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background-color: #4cd964;
-    border-radius: 50%;
-}
+/* The green online dot is now injected dynamically via inline HTML to support offline/online colors */
 
 .ins-chat-messages {
     flex: 1;

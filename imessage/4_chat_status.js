@@ -340,9 +340,33 @@ document.addEventListener('DOMContentLoaded', () => {
         panel.activeTab = activeTab;
 
         const avatarUrl = friend.avatarUrl || 'https://picsum.photos/seed/char/100/100';
+        
+        let isSleeping = false;
+        if (typeof window.imApp.isCharacterSleeping === 'function') {
+            isSleeping = window.imApp.isCharacterSleeping(friend);
+        } else if (friend.memory && friend.memory.schedule && friend.memory.schedule.enabled) {
+            const now = new Date();
+            const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            const parseTime = (timeStr) => {
+                if (!timeStr) return 0;
+                const [h, m] = timeStr.split(':').map(Number);
+                return (h || 0) * 60 + (m || 0);
+            };
+            
+            const sleepMin = parseTime(friend.memory.schedule.sleepTime || '23:00');
+            const wakeMin = parseTime(friend.memory.schedule.wakeTime || '07:00');
+            
+            if (sleepMin > wakeMin) {
+                isSleeping = currentTotalMinutes >= sleepMin || currentTotalMinutes < wakeMin;
+            } else {
+                isSleeping = currentTotalMinutes >= sleepMin && currentTotalMinutes < wakeMin;
+            }
+        }
+
         const name = friend.nickname || friend.realName || 'Unknown';
         const signature = friend.signature || '这个人很懒，什么都没写';
-        const onlineLabel = (panel.status || friend.status || 'online').toString().trim() || 'online';
+        const onlineLabel = isSleeping ? 'offline' : ((panel.status || friend.status || 'online').toString().trim() || 'online');
         
         const affection = typeof panel.affection === 'number' ? panel.affection : 50;
         const affectionChange = typeof panel.affectionChange === 'number' ? panel.affectionChange : 0;

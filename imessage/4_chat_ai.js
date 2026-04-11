@@ -287,10 +287,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (summaryLimit > 0 && messagesSinceSummary >= summaryLimit) {
             if (friend.memory.summary?.enabled) {
                 shouldSummarizeThisTurn = true;
-            } else {
+            } else if (messagesSinceSummary === summaryLimit && !friend.memory.summary?.enabled) {
                 const userAgreed = await new Promise(resolve => {
                     if (window.showCustomModal) {
-                        window.showCustomModal('是否生成记忆总结？', '当前对话条数已达到设定的阈值，是否让 AI 生成一段总结并存入长期记忆？', {
+                        window.showCustomModal({
+                            title: '是否生成记忆总结？',
+                            message: '当前对话条数已达到设定的阈值，是否让 AI 生成一段总结并存入长期记忆？',
                             confirmText: '生成总结',
                             cancelText: '暂不生成',
                             onConfirm: () => resolve(true),
@@ -317,6 +319,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+
+        const isSleeping = window.imApp.isCharacterSleeping(friend);
 
         const relationshipText = friend.memory.relationships && friend.memory.relationships.length > 0
             ? friend.memory.relationships.map(rel => {
@@ -363,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const affection = typeof panel.affection === 'number' ? panel.affection : 50;
 
-                return `Current Profile Panel Snapshot:\nOnline Status: online\nLocation: ${panel.location || '未知位置'}\nAction: ${panel.action || '暂无动作'}\nMood: ${panel.mood || '平静'}\nExpression: ${panel.expression || '自然'}\nAffection(好感度): ${affection}\nThought: ${panel.thought || '暂无心声'}\nRecent Events:\n${eventSummary}`;
+                return `Current Profile Panel Snapshot:\nOnline Status: ${isSleeping ? 'offline' : 'online'}\nLocation: ${panel.location || '未知位置'}\nAction: ${panel.action || '暂无动作'}\nMood: ${panel.mood || '平静'}\nExpression: ${panel.expression || '自然'}\nAffection(好感度): ${affection}\nThought: ${panel.thought || '暂无心声'}\nRecent Events:\n${eventSummary}`;
             })()
         ].filter(Boolean).join('\n\n');
 
@@ -388,9 +392,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (friend.type === 'group') {
             const groupMembers = window.imChat.getGroupMemberFriends(friend);
             const allowedSpeakerNames = groupMembers.map(member => member.nickname).filter(Boolean);
+            
+            // 处理成员的挂载单聊记忆
+            const groupMemorySettings = friend.memory?.mountSettings || {};
             const membersInfo = groupMembers.length > 0
                 ? groupMembers.map(member => {
-                    return `Name: ${member.nickname}\nPersona: ${member.persona || 'None'}\nOverview: ${member.memory?.overview || 'None'}`;
+                    let infoStr = `Name: ${member.nickname}\nPersona: ${member.persona || 'None'}\nOverview: ${member.memory?.overview || 'None'}`;
+                    
+                    // 如果开启了挂载单聊记忆，并且有单聊上下文
+                    if (groupMemorySettings[member.id] && window.imApp.getRecentContextMessages) {
+                        const contextMessages = window.imApp.getRecentContextMessages(member) || [];
+                        if (contextMessages.length > 0) {
+                            const formattedContext = contextMessages.map(msg => {
+                                const role = msg.role === 'user' ? (userState.name || 'User') : member.nickname;
+                                return `${role}: ${msg.content || msg.text || ''}`;
+                            }).join('\n');
+                            infoStr += `\n该成员当前的单聊上下文(仅 ${member.nickname} 可见并可参考，其他成员不可知):\n${formattedContext}`;
+                        }
+                    }
+                    
+                    return infoStr;
                 }).join('\n\n')
                 : 'None';
 
@@ -422,11 +443,13 @@ ${commonMemorySections || 'None'}`;
             const currentTime = new Date();
             const timeString = `${currentTime.getFullYear()}年${currentTime.getMonth() + 1}月${currentTime.getDate()}日 ${currentTime.getHours()}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
             
+            const sleepPrompt = isSleeping ? `\n【作息限制】：角色当前正在睡觉。如果用户发来消息，你必须强制保持离线状态并在所有回复内容（text 字段）的开头添加 "[自动回复] " 前缀，模拟已睡着或离线时的自动响应。心声和面板状态也要符合睡着的情境。` : '';
+
             systemPrompt = `${systemDepthWorldBookContext ? `System Depth Rules (Highest Priority):\n${systemDepthWorldBookContext}\n\n` : ''}${beforeRoleWorldBookContext ? `Before Role Rules:\n${beforeRoleWorldBookContext}\n\n` : ''}You are playing the role of ${friend.realName || friend.nickname}. 
 【核心设定/Core Persona】：${friend.persona || 'No specific persona'}。
 You are talking to ${userState.name}, whose persona is: ${effectiveUserPersona || 'A normal user'}。
 【强制要求】：你必须在接下来的每一句对话、动作和心声中，深刻且精准地体现出你自己的【核心设定】，同时充分关注并根据用户的设定做出互动，绝对不能偏离人设！
-当前系统时间是：${timeString}。请在对话和心声中自然地感知并体现出对当前时间（如早晚、日期）的认知。${afterRoleWorldBookContext ? `\n\nAfter Role Rules:\n${afterRoleWorldBookContext}` : ''}
+当前系统时间是：${timeString}。请在对话和心声中自然地感知并体现出对当前时间（如早晚、日期）的认知。${afterRoleWorldBookContext ? `\n\nAfter Role Rules:\n${afterRoleWorldBookContext}` : ''}${sleepPrompt}
 Reply naturally as your character in a chat app.
 请根据上下文，记忆，人设进行回复，一次按需求回复2-8条气泡。
 1. 如果用户刚刚给你转账，你可以选择正常文字回复，也可以额外输出 1 个支付对象表示“收下转账”；如果你想给用户转账，也可以输出 1 个支付对象表示“你向用户转账”。
@@ -525,28 +548,32 @@ ${commonMemorySections || 'None'}${profilePanelRequirement}`;
                     await window.imApp.commitScopedFriendChange(friend.id, (targetFriend) => {
                         if (!targetFriend) return;
                         if (!targetFriend.memory) targetFriend.memory = {};
-                        if (!Array.isArray(targetFriend.memory.longTermEntries)) {
-                            targetFriend.memory.longTermEntries = [];
-                            if (targetFriend.memory.longTerm) {
-                                targetFriend.memory.longTermEntries.push({
-                                    id: `ltm-${Date.now()}-0`,
-                                    title: '原有长期记忆',
-                                    content: targetFriend.memory.longTerm,
-                                    time: ''
-                                });
+                        if (targetFriend.type === 'group') {
+                            // 群聊存入 overview 或长期记忆中，此处选 overview 累加
+                            targetFriend.memory.overview = (targetFriend.memory.overview || '') + '\n' + summaryBlock;
+                        } else {
+                            if (!Array.isArray(targetFriend.memory.longTermEntries)) {
+                                targetFriend.memory.longTermEntries = [];
+                                if (targetFriend.memory.longTerm) {
+                                    targetFriend.memory.longTermEntries.push({
+                                        id: `ltm-${Date.now()}-0`,
+                                        title: '原有长期记忆',
+                                        content: targetFriend.memory.longTerm,
+                                        time: ''
+                                    });
+                                }
                             }
+                            
+                            const currentTime = new Date();
+                            const timeString = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, '0')}-${String(currentTime.getDate()).padStart(2, '0')} ${String(currentTime.getHours()).padStart(2, '0')}:${String(currentTime.getMinutes()).padStart(2, '0')}`;
+                            
+                            targetFriend.memory.longTermEntries.push({
+                                id: `ltm-${Date.now()}-1`,
+                                title: '对话总结',
+                                content: summaryBlock,
+                                time: timeString
+                            });
                         }
-                        
-                        const currentTime = new Date();
-                        const timeString = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, '0')}-${String(currentTime.getDate()).padStart(2, '0')} ${String(currentTime.getHours()).padStart(2, '0')}:${String(currentTime.getMinutes()).padStart(2, '0')}`;
-                        
-                        targetFriend.memory.longTermEntries.push({
-                            id: `ltm-${Date.now()}-1`,
-                            title: '对话总结',
-                            content: summaryBlock,
-                            time: timeString
-                        });
-                        
                         targetFriend.memory.lastSummaryMessageCount = (targetFriend.messages || []).length + 1;
                     }, { silent: true, metaOnly: true });
                 }
@@ -584,7 +611,7 @@ ${commonMemorySections || 'None'}${profilePanelRequirement}`;
                             expression: nextProfilePanel.expression || basePanel.expression || '自然',
                             affection: newAffection,
                             affectionChange: affectionChange,
-                            status: 'online',
+                            status: isSleeping ? 'offline' : 'online',
                             events: (() => {
                                 const existingEvents = Array.isArray(basePanel.events) ? basePanel.events : [];
                                 const mergedEvents = [...existingEvents];
@@ -619,7 +646,7 @@ ${commonMemorySections || 'None'}${profilePanelRequirement}`;
                             })()
                         };
                         targetFriend.latestThought = targetFriend.profilePanel.thought;
-                        targetFriend.status = 'online';
+                        targetFriend.status = isSleeping ? 'offline' : 'online';
                     }, {
                         syncActive: true,
                         metaOnly: true,

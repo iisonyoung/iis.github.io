@@ -809,6 +809,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const normalizedFriend = window.imApp.normalizeFriendData(friend);
         const memory = normalizedFriend.memory || window.imApp.createDefaultMemory();
         const typeMap = {
+            schedule: {
+                label: '角色记忆',
+                title: '作息时间'
+            },
             overview: {
                 label: '角色记忆',
                 title: '总览',
@@ -841,7 +845,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.subtitleEl.textContent = currentConfig.subtitle || '';
         ui.subtitleEl.style.display = currentConfig.subtitle ? 'block' : 'none';
 
-        if (type === 'cherished') {
+        if (type === 'schedule') {
+            ui.contentEl.innerHTML = `
+                <div class="chat-memory-modal-text-block">作息时间设置请直接在面板开关调整。</div>
+            `;
+        } else if (type === 'cherished') {
             const entries = Array.isArray(memory.cherishedEntries) ? memory.cherishedEntries : [];
             if (entries.length > 0) {
                 ui.contentEl.innerHTML = `
@@ -1910,6 +1918,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatMemorySummaryPromptInput = document.getElementById('chat-memory-summary-prompt-input');
         const chatMemoryLongtermInput = document.getElementById('chat-memory-longterm-input');
         const chatMemoryCherishedInput = document.getElementById('chat-memory-cherished-input');
+        const chatMemoryScheduleEnabled = document.getElementById('chat-memory-schedule-enabled-toggle');
+        const chatMemoryScheduleSleep = document.getElementById('chat-memory-schedule-sleep-input');
+        const chatMemoryScheduleWake = document.getElementById('chat-memory-schedule-wake-input');
 
         const nextMemory = {
             ...window.imApp.createDefaultMemory(),
@@ -1928,6 +1939,11 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             longTerm: chatMemoryLongtermInput ? chatMemoryLongtermInput.value : '',
             cherished: chatMemoryCherishedInput ? chatMemoryCherishedInput.value : '',
+            schedule: {
+                enabled: chatMemoryScheduleEnabled ? chatMemoryScheduleEnabled.checked : false,
+                sleepTime: chatMemoryScheduleSleep ? chatMemoryScheduleSleep.value : '23:00',
+                wakeTime: chatMemoryScheduleWake ? chatMemoryScheduleWake.value : '07:00'
+            },
             relationships: Array.isArray(friend.memory?.relationships) ? friend.memory.relationships : []
         };
 
@@ -1960,7 +1976,10 @@ document.addEventListener('DOMContentLoaded', () => {
             'chat-memory-summary-limit-input',
             'chat-memory-summary-prompt-input',
             'chat-memory-longterm-input',
-            'chat-memory-cherished-input'
+            'chat-memory-cherished-input',
+            'chat-memory-schedule-enabled-toggle',
+            'chat-memory-schedule-sleep-input',
+            'chat-memory-schedule-wake-input'
         ];
 
         ids.forEach(id => {
@@ -2003,6 +2022,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function syncChatScheduleCollapse(enabled) {
+        const scheduleDetails = document.getElementById('chat-memory-schedule-details');
+        const scheduleHeader = document.getElementById('schedule-header');
+        if (scheduleDetails && scheduleHeader) {
+            if (enabled) {
+                scheduleDetails.style.display = 'flex';
+                scheduleHeader.style.borderBottom = 'none';
+                scheduleHeader.style.borderBottomLeftRadius = '0';
+                scheduleHeader.style.borderBottomRightRadius = '0';
+            } else {
+                scheduleDetails.style.display = 'none';
+                scheduleHeader.style.borderBottom = 'none';
+                scheduleHeader.style.borderBottomLeftRadius = '20px';
+                scheduleHeader.style.borderBottomRightRadius = '20px';
+            }
+        }
+    }
+
     function syncChatSummaryPromptCollapse(enabled) {
         const summaryBody = document.getElementById('summary-body');
         const summaryHeader = document.getElementById('summary-header');
@@ -2028,6 +2065,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const scheduleToggleEl = document.getElementById('chat-memory-schedule-enabled-toggle');
+    if (scheduleToggleEl) {
+        scheduleToggleEl.addEventListener('change', (e) => {
+            syncChatScheduleCollapse(e.target.checked);
+        });
+    }
+
     function initChatSettingsForFriend(friend) {
         window.imData.currentSettingsFriend = friend;
         friend.memory = window.imApp.normalizeFriendData(friend).memory;
@@ -2040,6 +2084,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initChatSettingsInteractions();
         setActiveChatSettingsTab('info');
         syncChatSummaryPromptCollapse(!!friend.memory.summary.enabled);
+        syncChatScheduleCollapse(friend.memory.schedule ? !!friend.memory.schedule.enabled : false);
 
         if (bubbleStyleToggle) {
             const bubbleStyleEnabled = !!friend.customCssEnabled;
@@ -2065,6 +2110,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatMemorySummaryPromptInput = document.getElementById('chat-memory-summary-prompt-input');
         const chatMemoryLongtermInput = document.getElementById('chat-memory-longterm-input');
         const chatMemoryCherishedInput = document.getElementById('chat-memory-cherished-input');
+        const chatMemoryScheduleEnabled = document.getElementById('chat-memory-schedule-enabled-toggle');
+        const chatMemoryScheduleSleep = document.getElementById('chat-memory-schedule-sleep-input');
+        const chatMemoryScheduleWake = document.getElementById('chat-memory-schedule-wake-input');
 
         if (chatMemoryOverviewInput) chatMemoryOverviewInput.value = friend.memory.overview || '';
         if (chatMemoryAnniversariesInput) chatMemoryAnniversariesInput.value = friend.memory.anniversaries || '';
@@ -2075,6 +2123,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chatMemorySummaryPromptInput) chatMemorySummaryPromptInput.value = friend.memory.summary.prompt || '';
         if (chatMemoryLongtermInput) chatMemoryLongtermInput.value = friend.memory.longTerm || '';
         if (chatMemoryCherishedInput) chatMemoryCherishedInput.value = friend.memory.cherished || '';
+        if (chatMemoryScheduleEnabled) chatMemoryScheduleEnabled.checked = friend.memory.schedule ? !!friend.memory.schedule.enabled : false;
+        if (chatMemoryScheduleSleep) chatMemoryScheduleSleep.value = friend.memory.schedule ? (friend.memory.schedule.sleepTime || '23:00') : '23:00';
+        if (chatMemoryScheduleWake) chatMemoryScheduleWake.value = friend.memory.schedule ? (friend.memory.schedule.wakeTime || '07:00') : '07:00';
 
         bindChatSettingsMemoryPersistence(friend);
         renderCherishedMemoryCards(friend);

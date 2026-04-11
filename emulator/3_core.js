@@ -172,9 +172,9 @@ function readViewportMetrics() {
     const layoutWidth = Math.max(
         0,
         Math.round(
-            root.clientWidth ||
-            window.innerWidth ||
             visualViewport?.width ||
+            window.innerWidth ||
+            root.clientWidth ||
             0
         )
     );
@@ -182,9 +182,9 @@ function readViewportMetrics() {
     const layoutHeight = Math.max(
         0,
         Math.round(
-            root.clientHeight ||
-            window.innerHeight ||
             visualViewport?.height ||
+            window.innerHeight ||
+            root.clientHeight ||
             0
         )
     );
@@ -351,21 +351,29 @@ function initMobileKeyboardFixes() {
             return;
         }
 
+        // Add a check: only try to lift the keyboard if an input is actually focused.
+        // This prevents the page from jumping when scrolling hides the address bar
+        // and creates a height differential.
+        const isInputFocused = isTextInput(document.activeElement);
+        if (!isInputFocused) {
+            clearKeyboardState();
+            return;
+        }
+
         const root = document.documentElement;
         const visualHeight = window.visualViewport.height;
         const offsetTop = Math.max(0, window.visualViewport.offsetTop || 0);
         const layoutHeight = Math.max(
             0,
-            Number.parseFloat(root.style.getPropertyValue('--viewport-height')) ||
-            window.visualViewport.height + offsetTop ||
-            root.clientHeight ||
             window.innerHeight ||
+            root.clientHeight ||
             0
         );
 
         let keyboardHeight = Math.max(0, layoutHeight - (visualHeight + offsetTop));
 
         // 忽略地址栏、轻微缩放等小波动，只在明显弹键盘时抬起底部输入区
+        // Safari's bottom bar can be up to ~110px. Require >120px to confirm it's a keyboard.
         if (keyboardHeight < 120) {
             keyboardHeight = 0;
         }
